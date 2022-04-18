@@ -6,8 +6,9 @@ import math
 random.seed(conf.SEED)
 MIN_TX_WAIT_MSEC = 100
 
-def getTxDelayMsecWeighted(node, snr):
-    
+def getTxDelayMsecWeighted(node, rssi):
+    shortPacketMsec = int(airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], 0, conf.BWMODEM[conf.MODEM]))
+    snr = rssi-conf.NOISE_LEVEL
     SNR_MIN = -20
     SNR_MAX = 15
 
@@ -18,16 +19,21 @@ def getTxDelayMsecWeighted(node, snr):
         minWait = MIN_TX_WAIT_MSEC + (shortPacketMsec / 2)
         maxWait = MIN_TX_WAIT_MSEC + shortPacketMsec * 2
 
-    return (snr - SNR_MIN) * (maxWait - minWait) / (SNR_MAX - SNR_MIN) + minWait;
+    return int((snr - SNR_MIN) * (maxWait - minWait) / (SNR_MAX - SNR_MIN) + minWait);
 
 
 def getTxDelayMsec():
+    shortPacketMsec = int(airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], 0, conf.BWMODEM[conf.MODEM]))
     return random.randint(MIN_TX_WAIT_MSEC, MIN_TX_WAIT_MSEC + shortPacketMsec) 
 
 
-def channelIsBusy():
+def channelIsBusy(node, env):
     if random.randrange(10) <= conf.INTERFERENCE_LEVEL*10:
         return True
+    for p in node.packetsAtN[node.nodeid]:
+        if p.sensedByN[node.nodeid]:
+            if env.now >= p.addTime and env.now <= p.addTime+p.recTime:
+                return True
     return False
 
 
@@ -42,15 +48,10 @@ def airtime(sf, cr, pl, bw):
 
     Tsym = (2.0**sf)/bw
     Tpream = (conf.NPREAM + 4.25)*Tsym
-    payloadSymbNB = 8 + max(math.ceil((8.0*pl-4.0*sf+28+16-20*H)
-    /(4.0*(sf-2*DE)))*(cr+4),0)
-    
+    payloadSymbNB = 8 + max(math.ceil((8.0*pl-4.0*sf+28+16-20*H)/(4.0*(sf-2*DE)))*(cr+4), 0)
     Tpayload = payloadSymbNB * Tsym
     
-    return Tpream + Tpayload	
-
-
-shortPacketMsec = int(airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], 0, conf.BWMODEM[conf.MODEM]))
+    return (Tpream + Tpayload)*1000
 
 
 def estimatePathLoss(dist, freq):	
@@ -132,71 +133,3 @@ def estimatePathLoss(dist, freq):
         + p5*math.pow(dist, 2) + p6*dist + p7
         
     return Lpl
-
-
-
-# transmit discrete event loop, runs for each node
-
-def transmit(env, tx_node):
-    while True:
-        yield env.timeout(random.expovariate(1.0/float(tx_node.period)))
-
-        # listen-before-talk 
-        # https://meshtastic.org/docs/developers/firmware/mesh-alg 
-
-        tx_node.sent = tx_node.sent + 1
-        
-        global packetSeq
-        packetSeq = packetSeq + 1
-
-        global packetsAtN
-        global lostPackets
-        global recPackets
-        global packetsRecN
-        global collidedPackets
-
-        for rx_node in range(0, NR_NODES):
-            if rx_node == tx_node.nodeid:
-                continue
-            if (tx_node in packetsAtN[rx_node]):
-                print("ERROR: packet already in")
-            else:
-                # adding packet if no collision of other packets
-                if (checkcollision(tx_node.packetSeenAtN[rx_node]) == 1):
-                    tx_node.packetSeenAtN[rx_node].collided = 1
-                else:
-                    tx_node.packetSeenAtN[rx_node].collided = 0
-                packetsAtN[rx_node].append(tx_node)
-                tx_node.packetSeenAtN[rx_node].addTime = env.now
-                tx_node.packetSeenAtN[rx_node].seqNr = packetSeq
-
-        # take recTime at first rx_node in the list
-        yield env.timeout(tx_node.packetSeenAtN[0].recTime)
-
-        # if packet did not collide, add it in list of received packets
-        # unless it is already in
-        for rx_node in range(0, NR_NODES):
-            if rx_node == tx_node.nodeid:
-                continue
-            if tx_node.packetSeenAtN[rx_node].lost:
-                lostPackets.append(tx_node.packetSeenAtN[rx_node].seqNr)
-            else:
-                if tx_node.packetSeenAtN[rx_node].collided == 0:
-                    packetsRecN[rx_node].append(tx_node.packetSeenAtN[rx_node].seqNr)
-                    if (recPackets):
-                        if (recPackets[-1] != tx_node.packetSeenAtN[rx_node].seqNr):
-                            recPackets.append(tx_node.packetSeenAtN[rx_node].seqNr)
-                    else:
-                        recPackets.append(tx_node.packetSeenAtN[rx_node].seqNr)
-                else:
-                    collidedPackets.append(tx_node.packetSeenAtN[rx_node].seqNr)
-
-        # complete packet has been received by base station
-        # can remove it
-        for rx_node in range(0, NR_NODES):
-            if (tx_node in packetsAtN[rx_node]):
-                packetsAtN[rx_node].remove(tx_node)
-                # reset the packet
-                tx_node.packetSeenAtN[rx_node].collided = 0
-                tx_node.packetSeenAtN[rx_node].processed = 0
-                tx_node.packetSeenAtN[rx_node].lost = False

@@ -10,23 +10,17 @@ def checkcollision(env, packet, rx_nodeId, packetsAtN):
 
 	if packetsAtN[rx_nodeId]:
 		for other in packetsAtN[rx_nodeId]:
-			if other.tx_nodeId != packet.tx_nodeId:  # TODO change to packet ID 
-				# simple collision
-				if frequencyCollision(packet, other) and sfCollision(packet, other):
-					if conf.FULL_COLLISION:
-						if timingCollision(env, packet, other):
-							c = powerCollision(packet, other, rx_nodeId)
-								# mark all the collided packets
-							for p in c:
-								p.collidedAtN[rx_nodeId] = True
-								if p == packet:
-									col = 1
-						else:
-							pass # no timing collision
+			if frequencyCollision(packet, other) and sfCollision(packet, other):
+					if timingCollision(env, packet, other):
+						print('Packet nr.', packet.seq, 'from', packet.txNodeId, 'and packet nr.', other.seq, 'from', other.txNodeId, 'will collide!')
+						c = powerCollision(packet, other, rx_nodeId)
+							# mark all the collided packets
+						for p in c:
+							p.collidedAtN[rx_nodeId] = True
+							if p == packet:
+								col = 1
 					else:
-						packet.collidedAtN[rx_nodeId] = True
-						other.collidedAtN[rx_nodeId] = True
-						col = 1
+						pass # no timing collision
 		return col
 	return 0
 

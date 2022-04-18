@@ -15,6 +15,9 @@ This feature is referred to the path loss model. The implemented pathloss models
 * ```5``` set the 3GPP for suburban macro-cell  
 * ```6``` set the 3GPP for metropolitan macro-cell  
 
+## License
+This work is licensed under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/). 
+
 ## Further Reading
 1. [S. Spinsante, L. Gioacchini and L. Scalise, "A novel experimental-based tool for the design of LoRa networks," 2019 II Workshop on Metrology for Industry 4.0 and IoT (MetroInd4.0&IoT), 2019, pp. 317-322, doi: 10.1109/METROI4.2019.8792833.](https://ieeexplore.ieee.org/document/8792833)
 
