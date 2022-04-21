@@ -42,7 +42,6 @@ class BroadcastPipe(object):
 		return pipe
 
 
-
 if len(sys.argv) >= 2:
 	getParams(sys.argv)	
 else:
@@ -83,10 +82,10 @@ collisionRate = float((nrCollisions)/nrSensed)
 print("Collision rate:", collisionRate)
 deliveryRate = float(nrReceived/potentialReceivers)
 print("Delivery rate:", deliveryRate)
-nodeReach = sum([len(set([p.seq for p in packetsAtN[n.nodeid] if p.origTxNodeId != n.nodeid])) for n in conf.nodes]) /(conf.packetSeq*(conf.NR_NODES-1))
+nodeReach = sum([len(set([p.seq for p in packetsAtN[n.nodeid] if p.origTxNodeId != n.nodeid])) for n in conf.nodes])/(conf.packetSeq*(conf.NR_NODES-1))
 print("Node reachability:", nodeReach)
 # usefullnessRatio = nr of packets that delivered to a packet to a new receiver out of all packets sent
-usefulness = conf.usefulPackets/sent
+usefulness = conf.usefulPackets/nrReceived
 print("Ratio of packets reaching new receiver:", usefulness)
 graph.save()
 if conf.RANDOM:

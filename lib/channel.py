@@ -27,7 +27,7 @@ def getTxDelayMsec():
     return random.randint(MIN_TX_WAIT_MSEC, MIN_TX_WAIT_MSEC + shortPacketMsec) 
 
 
-def channelIsBusy(node, env):
+def isChannelActive(node, env):
     if random.randrange(10) <= conf.INTERFERENCE_LEVEL*10:
         return True
     for p in node.packetsAtN[node.nodeid]:

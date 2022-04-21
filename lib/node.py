@@ -2,7 +2,7 @@ from . import config as conf
 from .packet import *
 from .common import *
 from .collision import *
-from .channel import channelIsBusy
+from .channel import isChannelActive
 import random
 import math
 import simpy
@@ -56,7 +56,7 @@ class MeshNode():
 	def generatePacket(self):
 		while True:	
 			nextGen = random.expovariate(1.0/float(self.period))
-			if self.env.now+nextGen+airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], conf.packetLength, conf.BWMODEM[conf.MODEM]) < conf.SIMTIME:
+			if self.env.now+nextGen+conf.hopLimit*airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], conf.packetLength, conf.BWMODEM[conf.MODEM]) < conf.SIMTIME:
 				yield self.env.timeout(nextGen) 
 				conf.packetSeq += 1
 				p = MeshPacket(self.nodeid, self.nodeid, self.x, self.y, conf.packetLength, 1, conf.packetSeq)  
@@ -96,18 +96,15 @@ class MeshNode():
 		with self.transmitter.request() as request:
 			yield request
 
-			# wait when currently receiving or transmitting
-			while self.isReceiving or self.isTransmitting:
-				yield self.env.timeout(1)
-
 			# listen-before-talk from src/mesh/RadioLibInterface.cpp 
-			txTime = self.listenBeforeTalk(packet)
+			txTime = self.setRandomDelay(packet) 
 			print('At time', self.env.now, 'node', self.nodeid, 'picked wait time', txTime)
 			yield self.env.timeout(txTime)
 
-			# wait when currently receiving or transmitting
-			while self.isReceiving or self.isTransmitting:
-				yield self.env.timeout(1)
+			# wait when currently receiving or transmitting, or channel is active
+			while self.isReceiving or self.isTransmitting or isChannelActive(self, self.env):
+				txTime = self.setRandomDelay(packet) 
+				yield self.env.timeout(txTime)
 			print('At time', self.env.now, 'node', self.nodeid, 'ends waiting')	
 
 			if packet.seq not in self.leastReceivedHopLimit:
@@ -148,8 +145,11 @@ class MeshNode():
 					print('At time', self.env.now, 'node', self.nodeid, 'received packet', p.seq)
 					if p.seq not in self.leastReceivedHopLimit:  # did not yet receive packet with this seq nr.
 						if p.origTxNodeId != self.nodeid:
+							print('Node', self.nodeid, 'received USEFUL packet nr.', p.seq, 'orig. Tx', p.origTxNodeId)
 							conf.usefulPackets += 1
 						self.leastReceivedHopLimit[p.seq] = p.hopLimit
+					else:
+						print('Node', self.nodeid, 'ALREADY received packet nr.', p.seq)
 					if p.hopLimit < self.leastReceivedHopLimit[p.seq]:  # hop limit of received packet is lower than previously received one
 						self.leastReceivedHopLimit[p.seq] = p.hopLimit	
 
@@ -170,14 +170,11 @@ class MeshNode():
 						self.env.process(self.transmit(pNew))
 
 
-	def listenBeforeTalk(self, packet):
-		if channelIsBusy(self, self.env): 
-			for p in reversed(self.packetsAtN[self.nodeid]):
+	def setRandomDelay(self, packet):
+		for p in reversed(self.packetsAtN[self.nodeid]):
 				if p.seq == packet.seq and p.rssiAtN[self.nodeid] != 0: 
-					print('Channel busy; RSSI of node', self.nodeid, 'is', p.rssiAtN[self.nodeid])
+					print('Pick delay with RSSI of node', self.nodeid, 'is', p.rssiAtN[self.nodeid])
 					return getTxDelayMsecWeighted(self, p.rssiAtN[self.nodeid])  # weigthed waiting based on RSSI
-			return getTxDelayMsec()
-		else: 
-			return getTxDelayMsec()
+		return getTxDelayMsec()
 
 		
