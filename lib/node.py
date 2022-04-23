@@ -11,10 +11,10 @@ random.seed(conf.SEED)
 
 
 class MeshNode():
-	def __init__(self, env, bc_pipe, nodeid, period, packetsAtN, packets):
+	def __init__(self, env, bc_pipe, nodeid, period, packetsAtN, packets, x=-1, y=-1):
 		self.nodeid = nodeid
-		self.x = 0
-		self.y = 0
+		self.x = x
+		self.y = y
 		self.packetQueue = []
 		self.env = env
 		self.period = period
@@ -28,25 +28,26 @@ class MeshNode():
 		self.isReceiving = False
 		self.isTransmitting = False
 
-		found = False
-		while not found:
-			a = random.random()
-			b = random.random()
-			if b < a:
-				a,b = b,a
-			posx = b*conf.RAY*math.cos(2*math.pi*a/b)+conf.OX
-			posy = b*conf.RAY*math.sin(2*math.pi*a/b)+conf.OY
-			if len(conf.nodes) > 0:
-				for n in conf.nodes:
-					dist = np.sqrt(((abs(n.x-posx))**2)+((abs(n.y-posy))**2))
-					if dist >= 10:
-						found = 1
-						self.x = posx
-						self.y = posy
-			else:
-				self.x = posx
-				self.y = posy
-				found = True
+		if x == -1 and y == -1: 
+			found = False
+			while not found:
+				a = random.random()
+				b = random.random()
+				if b < a:
+					a,b = b,a
+				posx = b*conf.RAY*math.cos(2*math.pi*a/b)+conf.OX
+				posy = b*conf.RAY*math.sin(2*math.pi*a/b)+conf.OY
+				if len(conf.nodes) > 0:
+					for n in conf.nodes:
+						dist = np.sqrt(((abs(n.x-posx))**2)+((abs(n.y-posy))**2))
+						if dist >= 10:
+							found = 1
+							self.x = posx
+							self.y = posy
+				else:
+					self.x = posx
+					self.y = posy
+					found = True
 
 		env.process(self.generatePacket())
 		env.process(self.receive(self.bc_pipe.get_output_conn()))
@@ -71,8 +72,8 @@ class MeshNode():
 					minRetransmissions = conf.maxRetransmission
 					for packetSent in self.packets:
 						if packetSent.origTxNodeId == self.nodeid and packetSent.seq == p.seq:
-							if p.retransmissions < minRetransmissions:
-								minRetransmissions = p.retransmissions
+							if packetSent.retransmissions < minRetransmissions:
+								minRetransmissions = packetSent.retransmissions
 							if packetSent.ackReceived:
 								ackReceived = True
 					if ackReceived: 
@@ -82,11 +83,11 @@ class MeshNode():
 						if minRetransmissions > 0:  # generate new packet with same sequence number
 							pNew = MeshPacket(self.nodeid, self.nodeid, self.x, self.y, conf.packetLength, 1, p.seq)  
 							pNew.retransmissions = minRetransmissions-1
-							print('At time', self.env.now, 'node', self.nodeid, 'wants to retransmit its generated packet', p.seq)
-							self.packets.append(pNew)
+							print('At time', self.env.now, 'node', self.nodeid, 'wants to retransmit its generated packet', p.seq, 'minRetransmissions', minRetransmissions)
+							self.packets.append(pNew)							
 							self.env.process(self.transmit(pNew))
 						else:
-							print('Giving up...')
+							print('Node', self.nodeid, 'gives up on retransmitting packet', p.seq)
 							break
 			else:  # do not send this message anymore, since it is close to the end of the simulation
 				break
@@ -103,6 +104,7 @@ class MeshNode():
 
 			# wait when currently receiving or transmitting, or channel is active
 			while self.isReceiving or self.isTransmitting or isChannelActive(self, self.env):
+				# print('Busy tx/rx or channel busy')
 				txTime = self.setRandomDelay(packet) 
 				yield self.env.timeout(txTime)
 			print('At time', self.env.now, 'node', self.nodeid, 'ends waiting')	
@@ -173,7 +175,7 @@ class MeshNode():
 	def setRandomDelay(self, packet):
 		for p in reversed(self.packetsAtN[self.nodeid]):
 				if p.seq == packet.seq and p.rssiAtN[self.nodeid] != 0: 
-					print('Pick delay with RSSI of node', self.nodeid, 'is', p.rssiAtN[self.nodeid])
+					# print('At time', self.env.now, 'pick delay with RSSI of node', self.nodeid, 'is', p.rssiAtN[self.nodeid])
 					return getTxDelayMsecWeighted(self, p.rssiAtN[self.nodeid])  # weigthed waiting based on RSSI
 		return getTxDelayMsec()
 

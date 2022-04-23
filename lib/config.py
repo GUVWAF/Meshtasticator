@@ -5,8 +5,8 @@ RANDOM = False
 INTERFERENCE_LEVEL = 0.2
 MODEL = 5
 NR_NODES = 0
-RAY = 250.0
-SIMTIME = 100000  # ms
+RAY = 1000  # m 
+SIMTIME = 200000  # ms
 OX = 0.0  # origin x-coordinate
 OY = 0.0  # origin y-coordinate
 GAMMA = 2.08
@@ -22,6 +22,8 @@ SEED = 89
 packetSeq = 0 
 nodes = []
 usefulPackets = 0
+xs = []
+ys = []
 
 # from RadioInterface.cpp RegionInfo regions[]
 regions = { "US": {"freq_start": 902e6, "freq_end": 928e6, "power_limit": 30},

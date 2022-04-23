@@ -1,5 +1,6 @@
 from . import config as conf
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Button
 import os
 import pandas as pd
 import time
@@ -12,12 +13,26 @@ def loadData(fname):
 	
 	
 def getParams(args):
-	if len(args) < 3:
-		print("Usage: ./loraMesh <nr_nodes> <modem>")
+	if len(args) < 2:
+		print("Usage: ./loraMesh <modem> [nr_nodes] [--from-file <file_name>]")
 		exit(1)
 	else:
-		conf.NR_NODES = int(args[1])
-		conf.MODEM = int(args[2]) 
+		if int(args[1]) > 6 or int(args[1]) < 0:
+			print('Modem should be 0-6 for Short Fast to Very Long Slow')
+			exit(1)
+		conf.MODEM = int(args[1]) 
+		if len(args) > 2:
+			if type(args[2]) == str and ("--from-file" in args[2]):
+				string = args[3]
+				conf.xs = np.load("out/coords/"+string+"_x.npy")
+				conf.ys = np.load("out/coords/"+string+"_y.npy")
+				conf.NR_NODES = len(conf.xs)
+			else:
+				conf.NR_NODES = int(args[2])
+		else: 
+			[conf.xs, conf.ys] = genScenario()
+			conf.NR_NODES = len(conf.xs)
+		
 	print("Number of nodes:", conf.NR_NODES)
 	print("Simtime: ", conf.SIMTIME)
 	print("Modem: ", conf.MODEM)
@@ -27,6 +42,57 @@ def getParams(args):
 		os.mkdir('out')
 		os.mkdir('out/report')
 		os.mkdir('out/graphics')
+
+
+def genScenario():
+	save = True  # set to True if you want to save the coordinates of the nodes 
+	filename = "coords"
+	nodeX = []
+	nodeY = []
+
+	fig = plt.figure()
+	ax = fig.add_subplot(111)
+	fig.subplots_adjust(bottom=0.20)
+	plt.title("Double click to place nodes. Press continue to start the simulation.")
+	plt.xlabel('x (m)')
+	plt.ylabel('y (m)')
+	plt.xlim(-(conf.OX+conf.RAY+1), conf.OX+conf.RAY+1)
+	plt.ylim(-(conf.OY+conf.RAY+1), conf.OY+conf.RAY+1)
+	add_button_ax = fig.add_axes([0.5-0.05, 0.05, 0.2, 0.04])
+	add_button = Button(add_button_ax, 'Continue')
+
+	def plotting():
+		ax.cla()
+		ax.set_xlabel('x (m)')
+		ax.set_ylabel('y (m)')
+		ax.set_xlim(-(conf.OX+conf.RAY+1), conf.OX+conf.RAY+1)
+		ax.set_ylim(-(conf.OY+conf.RAY+1), conf.OY+conf.RAY+1)
+		ax.set_title("Double click to place nodes. Press continue to start the simulation.")
+		ax.scatter(nodeX, nodeY)
+		fig.canvas.draw_idle()
+
+
+	def submit(mouse_event):
+		fig.canvas.mpl_disconnect(cid)
+		plt.close()
+
+	add_button.on_clicked(submit)
+
+	def onclick(event):
+		if event.dblclick:
+			x = float(event.xdata)
+			y = float(event.ydata)
+			nodeX.append(x)
+			nodeY.append(y)
+			plotting()
+
+	cid = fig.canvas.mpl_connect('button_press_event', onclick)
+	plt.show()
+	if save:
+		np.save('out/coords/'+filename+'_x.npy', np.array(nodeX))
+		np.save('out/coords/'+filename+'_y.npy', np.array(nodeY))
+	
+	return nodeX, nodeY
 
 
 def finalReport(data):	
@@ -70,31 +136,15 @@ class Graph():
 		
 		self.xmax = conf.OX + conf.RAY +1
 		self.ymax = conf.OY + conf.RAY +1
-		plt.ion()
-		
 		self.fig, self.ax = plt.subplots()
-		if conf.RANDOM:
-			plt.suptitle('Placement of {} nodes\nin a range of {}m'.format(
+
+		plt.suptitle('Placement of {} nodes\nin a range of {}m'.format(
 				conf.NR_NODES, 
-				conf.RAY
-			))
-		else:
-			plt.suptitle('Placement of nodes\nin a range of {}m'.format(
-				conf.RAY
-			))
+				conf.RAY))
 		self.ax.set_xlim(-self.xmax, self.xmax)
 		self.ax.set_ylim(-self.ymax, self.ymax)
-		self.ax.set_axis_off()
-		
-		# plot the contour
-		x = np.linspace(-conf.RAY, conf.RAY, 100)
-		y = np.linspace(-conf.RAY, conf.RAY, 100)
-		x, y = np.meshgrid(x,y)
-		circ = x**2 + y**2 - conf.RAY**2
-		self.ax.contour(x,y,circ,[0] ,colors='k', linestyles = "dashed", linewidths = 1)
-		
-		self.fig.canvas.flush_events()
-		time.sleep(.0001)
+		self.ax.set_xlabel('x (m)')
+		self.ax.set_ylabel('y (m)')
 		
 		
 	def add(self, node):

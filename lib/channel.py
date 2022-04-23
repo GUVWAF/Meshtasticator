@@ -9,6 +9,7 @@ MIN_TX_WAIT_MSEC = 100
 def getTxDelayMsecWeighted(node, rssi):
     shortPacketMsec = int(airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], 0, conf.BWMODEM[conf.MODEM]))
     snr = rssi-conf.NOISE_LEVEL
+    print('SNR:', snr)  
     SNR_MIN = -20
     SNR_MAX = 15
 

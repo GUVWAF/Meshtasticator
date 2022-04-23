@@ -42,12 +42,7 @@ class BroadcastPipe(object):
 		return pipe
 
 
-if len(sys.argv) >= 2:
-	getParams(sys.argv)	
-else:
-	print("Usage: ./loraMesh <nodes>")
-	exit()
-
+getParams(sys.argv)	
 env = simpy.Environment()
 bc_pipe = BroadcastPipe(env)
 
@@ -56,18 +51,20 @@ packets = []
 packetsAtN = [[] for _ in range(conf.NR_NODES)]
 
 graph = Graph()
-
 for i in range(conf.NR_NODES):
-	node = MeshNode(env, bc_pipe, i, 50000, packetsAtN, packets)
+	if len(conf.xs) == 0: 
+		node = MeshNode(env, bc_pipe, i, 0.5*conf.SIMTIME, packetsAtN, packets)
+	else: 
+		node = MeshNode(env, bc_pipe, i, 0.5*conf.SIMTIME, packetsAtN, packets, conf.xs[i], conf.ys[i])
 	graph.add(node)
 	conf.nodes.append(node)
-		
 print("Nodes created")
 
 # start simulation
 env.run(until=conf.SIMTIME)
 
 # compute data extraction rate
+print("====== END OF SIMULATION ======")
 print('Number of messages created:', conf.packetSeq)
 sent = len(packets)
 potentialReceivers = sent*(conf.NR_NODES-1)
@@ -78,15 +75,20 @@ nrSensed = sum([1 for p in packets for n in conf.nodes if p.sensedByN[n.nodeid] 
 print("Number of packets sensed:", nrSensed)
 nrReceived = sum([1 for p in packets for n in conf.nodes if p.receivedAtN[n.nodeid] == True])
 print("Number of packets received:", nrReceived)
-collisionRate = float((nrCollisions)/nrSensed)
-print("Collision rate:", collisionRate)
+if nrSensed != 0:
+	collisionRate = float((nrCollisions)/nrSensed)
+	print("Collision rate:", collisionRate)
+else:
+	print("No packets sensed.")
 deliveryRate = float(nrReceived/potentialReceivers)
 print("Delivery rate:", deliveryRate)
 nodeReach = sum([len(set([p.seq for p in packetsAtN[n.nodeid] if p.origTxNodeId != n.nodeid])) for n in conf.nodes])/(conf.packetSeq*(conf.NR_NODES-1))
 print("Node reachability:", nodeReach)
-# usefullnessRatio = nr of packets that delivered to a packet to a new receiver out of all packets sent
-usefulness = conf.usefulPackets/nrReceived
-print("Ratio of packets reaching new receiver:", usefulness)
+if nrReceived != 0:
+	usefulness = conf.usefulPackets/nrReceived  # nr of packets that delivered to a packet to a new receiver out of all packets sent
+	print("Ratio of packets reaching new receiver:", usefulness)
+else:
+	print('No packets received.')
 graph.save()
 if conf.RANDOM:
 	data = {
