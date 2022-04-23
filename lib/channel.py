@@ -9,9 +9,14 @@ MIN_TX_WAIT_MSEC = 100
 def getTxDelayMsecWeighted(node, rssi):
     shortPacketMsec = int(airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], 0, conf.BWMODEM[conf.MODEM]))
     snr = rssi-conf.NOISE_LEVEL
-    print('SNR:', snr)  
     SNR_MIN = -20
     SNR_MAX = 15
+    if snr < SNR_MIN:
+        print('Minimum SNR at RSSI of', rssi, 'dBm')  
+        snr = SNR_MIN
+    if snr > SNR_MAX:
+        print('Maximum SNR at RSSI of', rssi, 'dBm')  
+        snr = SNR_MAX
 
     if node.isRouter == True:
         minWait = MIN_TX_WAIT_MSEC

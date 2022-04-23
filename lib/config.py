@@ -15,7 +15,7 @@ LPLD0 = 127.41
 NPREAM = 32   # number of preamble symbols from RadioInterface.h 
 GL = 0	# antenna gain in dB
 HM = 1.0  # height of the mobile device in m
-NOISE_LEVEL = -100  # some noise level in dB
+NOISE_LEVEL = -119.25  # some noise level in dB, based on SNR_MIN and minimum receiver sensitivity
 SEED = 89
 
 # simulation variables 
