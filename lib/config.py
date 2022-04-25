@@ -2,8 +2,9 @@ import numpy as np
 
 MODEM = 0
 RANDOM = False
-INTERFERENCE_LEVEL = 0.2
 MODEL = 5
+INTERFERENCE_LEVEL = 0.05
+VERBOSE = True
 NR_NODES = 0
 RAY = 1000  # m 
 SIMTIME = 200000  # ms
@@ -43,4 +44,4 @@ SENSMODEM = np.array([-124.25, -126.75, -128.25, -130.25, -132.75, -133.25, -139
 # Meshtastic 
 maxRetransmission = 3
 hopLimit = 3
-packetLength = 100 
+packetLength = 50 

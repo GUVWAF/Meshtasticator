@@ -1,5 +1,6 @@
 import random
 from . import config as conf
+from .common import verboseprint
 from .collision import * 
 import math
 
@@ -12,10 +13,10 @@ def getTxDelayMsecWeighted(node, rssi):
     SNR_MIN = -20
     SNR_MAX = 15
     if snr < SNR_MIN:
-        print('Minimum SNR at RSSI of', rssi, 'dBm')  
+        verboseprint('Minimum SNR at RSSI of', rssi, 'dBm')  
         snr = SNR_MIN
     if snr > SNR_MAX:
-        print('Maximum SNR at RSSI of', rssi, 'dBm')  
+        verboseprint('Maximum SNR at RSSI of', rssi, 'dBm')  
         snr = SNR_MAX
 
     if node.isRouter == True:
@@ -33,12 +34,17 @@ def getTxDelayMsec():
     return random.randint(MIN_TX_WAIT_MSEC, MIN_TX_WAIT_MSEC + shortPacketMsec) 
 
 
+def getRetransmissionMsec():  # from RadioInterface::getRetransmissionMsec
+    shortPacketMsec = int(airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], 0, conf.BWMODEM[conf.MODEM]))
+    return random.randint(9 * shortPacketMsec, 10 * shortPacketMsec)
+
+
 def isChannelActive(node, env):
     if random.randrange(10) <= conf.INTERFERENCE_LEVEL*10:
         return True
     for p in node.packetsAtN[node.nodeid]:
         if p.sensedByN[node.nodeid]:
-            if env.now >= p.addTime and env.now <= p.addTime+p.recTime:
+            if env.now >= p.startTime and env.now <= p.endTime:
                 return True
     return False
 

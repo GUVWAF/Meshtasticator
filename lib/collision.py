@@ -1,10 +1,10 @@
 from . import config as conf
+from .common import verboseprint
 import random
 
 def checkcollision(env, packet, rx_nodeId, packetsAtN):
 	# Check for collisions at rx_node
 	col = 0
-	# TODO collision due to interference 
 	# if random.randrange(10) <= conf.INTERFERENCE_LEVEL*10:
 	# 	packet.collidedAtN[rx_nodeId] = True
 
@@ -12,7 +12,7 @@ def checkcollision(env, packet, rx_nodeId, packetsAtN):
 		for other in packetsAtN[rx_nodeId]:
 			if frequencyCollision(packet, other) and sfCollision(packet, other):
 					if timingCollision(env, packet, other):
-						print('Packet nr.', packet.seq, 'from', packet.txNodeId, 'and packet nr.', other.seq, 'from', other.txNodeId, 'will collide!')
+						verboseprint('Packet nr.', packet.seq, 'from', packet.txNodeId, 'and packet nr.', other.seq, 'from', other.txNodeId, 'will collide!')
 						c = powerCollision(packet, other, rx_nodeId)
 							# mark all the collided packets
 						for p in c:
@@ -61,8 +61,7 @@ def timingCollision(env, p1, p2):
 		way we can win is by being late enough (only the first n - 5 preamble symbols overlap)
 	"""
 	Tpreamb = 2**p1.sf/(1.0*p1.bw) * (conf.NPREAM - 5)
-	p2_end = p2.addTime + p2.recTime
 	p1_cs = env.now + Tpreamb
-	if p1_cs < p2_end: # p1 collided with p2 and lost
+	if p1_cs < p2.endTime: # p1 collided with p2 and lost
 		return True
 	return False

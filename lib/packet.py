@@ -6,8 +6,7 @@ import random
 random.seed(conf.SEED)
 
 class MeshPacket(): 
-	def __init__(self, origTxNodeId, txNodeId, x, y, plen, prio, seq):
-		self.addTime = 0
+	def __init__(self, origTxNodeId, txNodeId, x, y, plen, seq):
 		self.origTxNodeId = origTxNodeId
 		self.txNodeId = txNodeId
 		self.txpow = conf.PTX
@@ -18,7 +17,6 @@ class MeshPacket():
 		self.receivedAtN = [False for _ in range(conf.NR_NODES)]
 		self.onAirToN = [True for _ in range(conf.NR_NODES)]
 		self.seq = seq
-		self.prio = prio
 
 		# configuration values
 		self.sf = conf.SFMODEM[conf.MODEM]
@@ -36,10 +34,20 @@ class MeshPacket():
 				self.sensedByN[rx_node.nodeid] = True
 				
 		self.packetlen = plen
-		self.recTime = airtime(self.sf, self.cr, self.packetlen, self.bw)
+		self.timeOnAir = airtime(self.sf, self.cr, self.packetlen, self.bw)
+		self.startTime = 0
+		self.endTime = 0
 
 		# Routing
 		self.retransmissions = conf.maxRetransmission
 		self.wantAck = False
 		self.ackReceived = False
 		self.hopLimit = conf.hopLimit
+
+
+class MeshMessage():
+	def __init__(self, origTxNodeId, genTime, seq):
+		self.origTxNodeId = origTxNodeId
+		self.genTime = genTime
+		self.seq = seq
+		self.endTime = 0

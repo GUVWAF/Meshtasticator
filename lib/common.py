@@ -95,6 +95,62 @@ def genScenario():
 	return nodeX, nodeY
 
 
+if conf.VERBOSE:
+    def verboseprint(*args, **kwargs): 
+      print(*args, **kwargs)
+else:   
+    def verboseprint(*args, **kwargs): 
+      pass
+
+
+def plotSchedule(packets, messages):
+	# colormap = plt.cm.coolwarm
+	# colors = [colormap(i) for i in np.linspace(0, 1, len(packets))]
+	maxTime = 0
+	overlapping = [[m] for m in messages]
+	for m in messages:
+		m.endTime = max([p.endTime for p in packets if p.seq == m.seq])
+	for m1 in messages:
+		for m2 in messages:
+			if m1 != m2:
+				if m2.genTime <= m1.endTime and m2.endTime > m1.genTime:
+					overlapping[m1.seq-1].append(m2)
+	timeSequences = []
+	for o1 in overlapping:
+		for o2 in overlapping:
+			if set(o1) != set(o2) and set(o1) not in timeSequences:
+				timeSequences.append(set(o1))
+	for i,t in enumerate(timeSequences):
+		plt.figure()
+		plt.suptitle('Time sequence {}/{}\nClick to continue.'.format(i+1, len(timeSequences)))
+		for m in t:
+			for p in packets:
+				if p.seq == m.seq: 
+					plt.barh(p.txNodeId, p.timeOnAir, left=p.startTime, color='blue', edgecolor='k')
+					plt.text(p.startTime+p.timeOnAir/2, p.txNodeId, str(m.seq), horizontalalignment='center', verticalalignment='center', fontsize=12)
+					for rxId, bool in enumerate(p.collidedAtN):
+						if bool:
+							plt.barh(rxId, p.timeOnAir, left=p.startTime, color='red', edgecolor='r')
+			# afterwards receptions 
+			for p in packets:
+				if p.seq == m.seq: 
+					for rxId, bool in enumerate(p.receivedAtN):
+						if bool:
+							plt.barh(rxId, p.timeOnAir, left=p.startTime, color='green', edgecolor='green')
+			plt.arrow(m.genTime, m.origTxNodeId-0.4, 0, 0.75, head_width=0.02*(m.endTime-m.genTime), head_length=0.3, fc='k', ec='k')
+			plt.text(m.genTime, m.origTxNodeId+0.8, str(m.seq), horizontalalignment='center', verticalalignment='center', fontsize=12)
+		maxTime = max([m.endTime for m in t])
+		minTime = min([m.genTime for m in t])
+		
+		plt.yticks([0]+list(range(conf.NR_NODES)), label=[str(n) for n in [0]+list(range(conf.NR_NODES))])
+		plt.xlabel('Time (s)')
+		plt.ylabel('Transmitter')
+		plt.xlim(minTime-0.03*(maxTime-minTime), maxTime)
+		plt.show(block=False)
+		plt.waitforbuttonpress()
+		plt.close()
+
+
 def finalReport(data):	
 	if not conf.FULL_COLLISION:
 		title = "simple"
@@ -164,6 +220,5 @@ class Graph():
 			plt.savefig('out/graphics/placement_'+str(conf.NR_NODES))
 		else:
 			plt.savefig('out/graphics/placement')
-		plt.close
 
 

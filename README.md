@@ -35,6 +35,9 @@ This feature is referred to the path loss model. The implemented pathloss models
 ### Interference level 
 Chance that at a given moment there is already a LoRa packet being sent on your channel, outside of the Meshtastic traffic. Given in a ratio from 0 to 1.
 
+## Example
+Run ```loraMesh.py 0 --from-file collision``` to see a simulation of three nodes, in which some packets might collide due to the hidden node problem.
+
 ## License
 This work is licensed under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/). 
 

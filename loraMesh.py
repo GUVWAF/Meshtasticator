@@ -21,7 +21,7 @@ class BroadcastPipe(object):
 
 
 	def latency(self, packet):
-		yield self.env.timeout(packet.recTime)
+		yield self.env.timeout(packet.timeOnAir)
 		if not self.pipes:
 			raise RuntimeError('There are no output pipes.')
 		events = [store.put(packet) for store in self.pipes]
@@ -47,15 +47,16 @@ env = simpy.Environment()
 bc_pipe = BroadcastPipe(env)
 
 # list of received packets
+messages = []
 packets = []
 packetsAtN = [[] for _ in range(conf.NR_NODES)]
 
 graph = Graph()
 for i in range(conf.NR_NODES):
 	if len(conf.xs) == 0: 
-		node = MeshNode(env, bc_pipe, i, 0.5*conf.SIMTIME, packetsAtN, packets)
+		node = MeshNode(env, bc_pipe, i, 0.5*conf.SIMTIME, messages, packetsAtN, packets)
 	else: 
-		node = MeshNode(env, bc_pipe, i, 0.5*conf.SIMTIME, packetsAtN, packets, conf.xs[i], conf.ys[i])
+		node = MeshNode(env, bc_pipe, i, 0.5*conf.SIMTIME, messages, packetsAtN, packets, conf.xs[i], conf.ys[i])
 	graph.add(node)
 	conf.nodes.append(node)
 print("Nodes created")
@@ -77,16 +78,16 @@ nrReceived = sum([1 for p in packets for n in conf.nodes if p.receivedAtN[n.node
 print("Number of packets received:", nrReceived)
 if nrSensed != 0:
 	collisionRate = float((nrCollisions)/nrSensed)
-	print("Collision rate:", collisionRate)
+	print("Percentage of packets that collided:", round(collisionRate*100, 2))
 else:
 	print("No packets sensed.")
 deliveryRate = float(nrReceived/potentialReceivers)
-print("Delivery rate:", deliveryRate)
+# print("Delivery rate:", round(deliveryRate*100, 2))
 nodeReach = sum([len(set([p.seq for p in packetsAtN[n.nodeid] if p.origTxNodeId != n.nodeid])) for n in conf.nodes])/(conf.packetSeq*(conf.NR_NODES-1))
-print("Node reachability:", nodeReach)
+print("Average percentage of nodes reached:", round(nodeReach*100, 2))
 if nrReceived != 0:
 	usefulness = conf.usefulPackets/nrReceived  # nr of packets that delivered to a packet to a new receiver out of all packets sent
-	print("Ratio of packets reaching new receiver:", usefulness)
+	print("Percentage of received packets containing new message:", round(usefulness*100, 2))
 else:
 	print('No packets received.')
 graph.save()
@@ -100,3 +101,5 @@ if conf.RANDOM:
 		"DeliveryRate": deliveryRate,
 	}
 	finalReport(data)
+
+plotSchedule(packets, messages)
