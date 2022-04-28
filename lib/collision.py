@@ -1,12 +1,14 @@
 from . import config as conf
-from .common import verboseprint
 import random
+
+VERBOSE = False
 
 def checkcollision(env, packet, rx_nodeId, packetsAtN):
 	# Check for collisions at rx_node
 	col = 0
-	# if random.randrange(10) <= conf.INTERFERENCE_LEVEL*10:
-	# 	packet.collidedAtN[rx_nodeId] = True
+	if conf.COLLISION_DUE_TO_INTERFERENCE:
+		if random.randrange(10) <= conf.INTERFERENCE_LEVEL*10:
+			packet.collidedAtN[rx_nodeId] = True
 
 	if packetsAtN[rx_nodeId]:
 		for other in packetsAtN[rx_nodeId]:
@@ -65,3 +67,11 @@ def timingCollision(env, p1, p2):
 	if p1_cs < p2.endTime: # p1 collided with p2 and lost
 		return True
 	return False
+
+
+if VERBOSE:
+	def verboseprint(*args, **kwargs): 
+		print(*args, **kwargs)
+else:   
+	def verboseprint(*args, **kwargs): 
+		pass

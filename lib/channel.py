@@ -1,9 +1,9 @@
 import random
 from . import config as conf
-from .common import verboseprint
 from .collision import * 
 import math
 
+VERBOSE = False
 random.seed(conf.SEED)
 MIN_TX_WAIT_MSEC = 100
 
@@ -145,3 +145,11 @@ def estimatePathLoss(dist, freq):
         + p5*math.pow(dist, 2) + p6*dist + p7
         
     return Lpl
+
+
+if VERBOSE:
+	def verboseprint(*args, **kwargs): 
+		print(*args, **kwargs)
+else:   
+	def verboseprint(*args, **kwargs): 
+		pass

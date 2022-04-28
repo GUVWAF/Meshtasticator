@@ -18,7 +18,8 @@ The modem number is defined as below:
 | 6 |Very Long Slow|31.25|8|12
 
 ### Number of nodes
-If number of nodes is specified, the simulation starts with random placement of these nodes. Otherwise, you can place the nodes yourself on a plot. 
+If number of nodes is specified, the simulation starts with random placement of these nodes. It makes sure that each node can reach at least one other node. Furthermore, all nodes are placed at a configurable minimum distance (MINDIST) from each other. 
+If you do not specify the number of nodes, you can place the nodes yourself on a plot. 
 
 There are some other configurations that can be set in *lib/config.py*, which are listed below.
 

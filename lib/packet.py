@@ -6,7 +6,7 @@ import random
 random.seed(conf.SEED)
 
 class MeshPacket(): 
-	def __init__(self, origTxNodeId, txNodeId, x, y, plen, seq):
+	def __init__(self, nodes, origTxNodeId, txNodeId, x, y, plen, seq):
 		self.origTxNodeId = origTxNodeId
 		self.txNodeId = txNodeId
 		self.txpow = conf.PTX
@@ -20,11 +20,11 @@ class MeshPacket():
 
 		# configuration values
 		self.sf = conf.SFMODEM[conf.MODEM]
-		self.cr =  conf.CRMODEM[conf.MODEM]
-		self.bw =  conf.BWMODEM[conf.MODEM]
-		self.freq =  conf.REGION["freq_start"]
+		self.cr = conf.CRMODEM[conf.MODEM]
+		self.bw = conf.BWMODEM[conf.MODEM]
+		self.freq = conf.REGION["freq_start"]
 
-		for rx_node in conf.nodes:
+		for rx_node in nodes:
 			if rx_node.nodeid == self.txNodeId:
 				continue
 			dist_2d = np.sqrt((x-rx_node.x)*(x-rx_node.x)+(y-rx_node.y)*(y-rx_node.y))

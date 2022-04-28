@@ -1,15 +1,12 @@
 from . import config as conf
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
 import os
+import simpy
 import pandas as pd
 import time
 import numpy as np
-
-
-def loadData(fname):
-	data = pd.read_csv(fname, header = 0)
-	return data
 	
 	
 def getParams(args):
@@ -42,6 +39,11 @@ def getParams(args):
 		os.mkdir('out')
 		os.mkdir('out/report')
 		os.mkdir('out/graphics')
+
+
+def setBatch(simNr):
+	conf.SEED = simNr
+	conf.VERBOSE = False
 
 
 def genScenario():
@@ -95,17 +97,7 @@ def genScenario():
 	return nodeX, nodeY
 
 
-if conf.VERBOSE:
-    def verboseprint(*args, **kwargs): 
-      print(*args, **kwargs)
-else:   
-    def verboseprint(*args, **kwargs): 
-      pass
-
-
 def plotSchedule(packets, messages):
-	# colormap = plt.cm.coolwarm
-	# colors = [colormap(i) for i in np.linspace(0, 1, len(packets))]
 	maxTime = 0
 	overlapping = [[m] for m in messages]
 	for m in messages:
@@ -121,7 +113,8 @@ def plotSchedule(packets, messages):
 			if set(o1) != set(o2) and set(o1) not in timeSequences:
 				timeSequences.append(set(o1))
 	for i,t in enumerate(timeSequences):
-		plt.figure()
+		fig = plt.figure()
+		move_figure(fig, 900, 200)
 		plt.suptitle('Time sequence {}/{}\nClick to continue.'.format(i+1, len(timeSequences)))
 		for m in t:
 			for p in packets:
@@ -143,12 +136,22 @@ def plotSchedule(packets, messages):
 		minTime = min([m.genTime for m in t])
 		
 		plt.yticks([0]+list(range(conf.NR_NODES)), label=[str(n) for n in [0]+list(range(conf.NR_NODES))])
-		plt.xlabel('Time (s)')
-		plt.ylabel('Transmitter')
+		plt.xlabel('Time (ms)')
+		plt.ylabel('Transmitter ID')
 		plt.xlim(minTime-0.03*(maxTime-minTime), maxTime)
 		plt.show(block=False)
 		plt.waitforbuttonpress()
 		plt.close()
+
+
+def move_figure(f, x, y):
+  backend = matplotlib.get_backend()
+  if backend == 'TkAgg':
+    f.canvas.manager.window.wm_geometry("+%d+%d" % (x, y))
+  elif backend == 'WXAgg':
+    f.canvas.manager.window.SetPosition((x, y))
+  else:
+    f.canvas.manager.window.move(x, y)
 
 
 def finalReport(data):	
@@ -187,6 +190,41 @@ def nodeReport(data):
 		df.to_csv('out/report/{}'.format(fname), index = False)	
 		
 
+class BroadcastPipe(object):
+	def __init__(self, env, capacity=simpy.core.Infinity):
+		self.env = env
+		self.capacity = capacity
+		self.pipes = []
+
+	def onAir(self, packet):
+		if not self.pipes:
+			raise RuntimeError('There are no output pipes.')
+		events = [store.put(packet) for store in self.pipes]
+		return self.env.all_of(events)  # Condition event for all "events"
+
+
+	def latency(self, packet):
+		yield self.env.timeout(packet.timeOnAir)
+		if not self.pipes:
+			raise RuntimeError('There are no output pipes.')
+		events = [store.put(packet) for store in self.pipes]
+		return self.env.all_of(events)  # Condition event for all "events"
+
+
+	def put(self, packet):
+		self.env.process(self.latency(packet))
+		if not self.pipes:
+			raise RuntimeError('There are no output pipes.')
+		events = [store.put(packet) for store in self.pipes]
+		return self.env.all_of(events)  # Condition event for all "events"
+       
+
+	def get_output_conn(self):
+		pipe = simpy.Store(self.env, capacity=self.capacity)
+		self.pipes.append(pipe)
+		return pipe
+
+
 class Graph():
 	def __init__(self):
 		
@@ -194,13 +232,13 @@ class Graph():
 		self.ymax = conf.OY + conf.RAY +1
 		self.fig, self.ax = plt.subplots()
 
-		plt.suptitle('Placement of {} nodes\nin a range of {}m'.format(
-				conf.NR_NODES, 
-				conf.RAY))
+		plt.suptitle('Placement of {} nodes'.format(
+				conf.NR_NODES))
 		self.ax.set_xlim(-self.xmax, self.xmax)
 		self.ax.set_ylim(-self.ymax, self.ymax)
 		self.ax.set_xlabel('x (m)')
 		self.ax.set_ylabel('y (m)')
+		move_figure(self.fig, 200, 200)
 		
 		
 	def add(self, node):
@@ -220,5 +258,4 @@ class Graph():
 			plt.savefig('out/graphics/placement_'+str(conf.NR_NODES))
 		else:
 			plt.savefig('out/graphics/placement')
-
 

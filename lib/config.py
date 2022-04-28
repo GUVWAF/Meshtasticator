@@ -1,12 +1,14 @@
 import numpy as np
 
 MODEM = 0
-RANDOM = False
 MODEL = 5
+NR_NODES = 10
 INTERFERENCE_LEVEL = 0.05
+COLLISION_DUE_TO_INTERFERENCE = False
 VERBOSE = True
-NR_NODES = 0
-RAY = 1000  # m 
+RANDOM = False
+RAY = 2000  # m 
+MINDIST = 10
 SIMTIME = 200000  # ms
 OX = 0.0  # origin x-coordinate
 OY = 0.0  # origin y-coordinate
@@ -17,12 +19,8 @@ NPREAM = 32   # number of preamble symbols from RadioInterface.h
 GL = 0	# antenna gain in dB
 HM = 1.0  # height of the mobile device in m
 NOISE_LEVEL = -119.25  # some noise level in dB, based on SNR_MIN and minimum receiver sensitivity
-SEED = 89
+SEED = 12
 
-# simulation variables 
-packetSeq = 0 
-nodes = []
-usefulPackets = 0
 xs = []
 ys = []
 
@@ -43,5 +41,5 @@ SENSMODEM = np.array([-124.25, -126.75, -128.25, -130.25, -132.75, -133.25, -139
 
 # Meshtastic 
 maxRetransmission = 3
-hopLimit = 3
+hopLimit = 4
 packetLength = 50 
