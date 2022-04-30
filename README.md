@@ -40,6 +40,8 @@ This feature is referred to the path loss model. The implemented pathloss models
 * ```4``` set the Okumura-Hata for rural areas  
 * ```5``` set the 3GPP for suburban macro-cell  
 * ```6``` set the 3GPP for metropolitan macro-cell  
+* ```6``` set the Polynomial 3rd degree 
+* ```7``` set the Polynomial 6th degree 
 
 ### Period
 Mean period (in ms) with which the nodes generate a new message following an exponential distribution. 
