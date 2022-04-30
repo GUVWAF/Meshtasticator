@@ -1,6 +1,6 @@
 import numpy as np
 from . import config as conf
-from .channel import *
+from .phy import *
 import random
 
 random.seed(conf.SEED)

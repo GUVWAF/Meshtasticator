@@ -10,35 +10,28 @@ import numpy as np
 	
 	
 def getParams(args):
-	if len(args) < 2:
-		print("Usage: ./loraMesh <modem> [nr_nodes] [--from-file <file_name>]")
+	if len(args) > 3:
+		print("Usage: ./loraMesh [nr_nodes] [--from-file <file_name>]")
+		print("Do not specify the number of nodes when reading from a file.")
 		exit(1)
 	else:
-		if int(args[1]) > 6 or int(args[1]) < 0:
-			print('Modem should be 0-6 for Short Fast to Very Long Slow')
-			exit(1)
-		conf.MODEM = int(args[1]) 
-		if len(args) > 2:
-			if type(args[2]) == str and ("--from-file" in args[2]):
-				string = args[3]
+		if len(args) > 1:
+			if type(args[1]) == str and ("--from-file" in args[1]):
+				string = args[2]
 				conf.xs = np.load("out/coords/"+string+"_x.npy")
 				conf.ys = np.load("out/coords/"+string+"_y.npy")
 				conf.NR_NODES = len(conf.xs)
 			else:
-				conf.NR_NODES = int(args[2])
+				conf.NR_NODES = int(args[1])
 		else: 
 			[conf.xs, conf.ys] = genScenario()
 			conf.NR_NODES = len(conf.xs)
 		
 	print("Number of nodes:", conf.NR_NODES)
-	print("Simtime: ", conf.SIMTIME)
 	print("Modem: ", conf.MODEM)
+	print("Simulation time (s): ", conf.SIMTIME/1000)
+	print("Period (s):", conf.PERIOD/1000)
 	print("Interference level:", conf.INTERFERENCE_LEVEL)
-	
-	if not os.path.isdir('out'):
-		os.mkdir('out')
-		os.mkdir('out/report')
-		os.mkdir('out/graphics')
 
 
 def setBatch(simNr):
@@ -99,6 +92,7 @@ def genScenario():
 
 def plotSchedule(packets, messages):
 	maxTime = 0
+	# combine all messages with overlapping packets in one time sequence 
 	overlapping = [[m] for m in messages]
 	for m in messages:
 		m.endTime = max([p.endTime for p in packets if p.seq == m.seq])
@@ -108,30 +102,36 @@ def plotSchedule(packets, messages):
 				if m2.genTime <= m1.endTime and m2.endTime > m1.genTime:
 					overlapping[m1.seq-1].append(m2)
 	timeSequences = []
-	for o1 in overlapping:
-		for o2 in overlapping:
-			if set(o1) != set(o2) and set(o1) not in timeSequences:
-				timeSequences.append(set(o1))
+	multiples = [[] for _ in overlapping]
+	for ind, o1 in enumerate(overlapping):
+		for o2 in overlapping: 
+			if set(o1).issubset(set(o2)):
+				multiples[ind].append(set(o2))
+		maxSet = max(multiples[ind], key=len)
+		if maxSet not in timeSequences:
+			timeSequences.append(maxSet)
+	# print each time sequence in new figure
 	for i,t in enumerate(timeSequences):
 		fig = plt.figure()
 		move_figure(fig, 900, 200)
 		plt.suptitle('Time sequence {}/{}\nClick to continue.'.format(i+1, len(timeSequences)))
-		for m in t:
-			for p in packets:
-				if p.seq == m.seq: 
-					plt.barh(p.txNodeId, p.timeOnAir, left=p.startTime, color='blue', edgecolor='k')
-					plt.text(p.startTime+p.timeOnAir/2, p.txNodeId, str(m.seq), horizontalalignment='center', verticalalignment='center', fontsize=12)
-					for rxId, bool in enumerate(p.collidedAtN):
-						if bool:
-							plt.barh(rxId, p.timeOnAir, left=p.startTime, color='red', edgecolor='r')
-			# afterwards receptions 
-			for p in packets:
-				if p.seq == m.seq: 
-					for rxId, bool in enumerate(p.receivedAtN):
-						if bool:
-							plt.barh(rxId, p.timeOnAir, left=p.startTime, color='green', edgecolor='green')
-			plt.arrow(m.genTime, m.origTxNodeId-0.4, 0, 0.75, head_width=0.02*(m.endTime-m.genTime), head_length=0.3, fc='k', ec='k')
-			plt.text(m.genTime, m.origTxNodeId+0.8, str(m.seq), horizontalalignment='center', verticalalignment='center', fontsize=12)
+		for p in packets:  # collisions
+			if p.seq in [m.seq for m in t]: 
+				for rxId, bool in enumerate(p.collidedAtN):
+					if bool:
+						plt.barh(rxId, p.timeOnAir, left=p.startTime, color='red', edgecolor='r')
+		for p in packets:  # transmissions
+			if p.seq in [m.seq for m in t]:  
+				plt.barh(p.txNodeId, p.timeOnAir, left=p.startTime, color='blue', edgecolor='k')
+				plt.text(p.startTime+p.timeOnAir/2, p.txNodeId, str(p.seq), horizontalalignment='center', verticalalignment='center', fontsize=12)
+		for p in packets:  # receptions
+			if p.seq in [m.seq for m in t]:  
+				for rxId, bool in enumerate(p.receivedAtN):
+					if bool:
+						plt.barh(rxId, p.timeOnAir, left=p.startTime, color='green', edgecolor='green')
+		for m in t:  # message generations
+			plt.arrow(m.genTime, m.origTxNodeId-0.4, 0, 0.5, head_width=0.02*(m.endTime-m.genTime), head_length=0.3, fc='k', ec='k')
+			plt.text(m.genTime, m.origTxNodeId+0.51, str(m.seq), horizontalalignment='center', verticalalignment='center', fontsize=12)
 		maxTime = max([m.endTime for m in t])
 		minTime = min([m.genTime for m in t])
 		
@@ -154,40 +154,10 @@ def move_figure(f, x, y):
     f.canvas.manager.window.move(x, y)
 
 
-def finalReport(data):	
-	if not conf.FULL_COLLISION:
-		title = "simple"
-	else:
-		title = ""
-	
-	fname = "finalReport_{}.csv".format(title)
-	
-	if not os.path.isfile('out/report/{}'.format(fname)):
-		df_new = pd.DataFrame(data, index = [0])
-		df_new.to_csv('out/report/{}'.format(fname), index=False)
-	else:
-		df = pd.read_csv('out/report/{}'.format(fname))
-		df_new = pd.DataFrame(data, index=[df.ndim-1])
-		df = pd.concat((df, df_new), ignore_index = True)
-		df.to_csv('out/report/{}'.format(fname),index=False)		
-
-
-def nodeReport(data):
-	if not conf.FULL_COLLISION:
-			title = "simple"
-	else:
-		title = ""
-
-	fname = "nodesReport_mod{}_exp{}_{}.csv".format(conf.MODEL, conf.EXP, title)
-	
-	if not os.path.isfile('out/report/{}'.format(fname)):
-		df_new = pd.DataFrame(data, index = [0])
-		df_new.to_csv('out/report/{}'.format(fname), index=False)
-	else:
-		df = pd.read_csv('out/report/{}'.format(fname))
-		df_new = pd.DataFrame(data, index=[df.ndim-1])
-		df = pd.concat((df, df_new), ignore_index = True)
-		df.to_csv('out/report/{}'.format(fname), index = False)	
+def simReport(data, subdir, param):	
+	fname = subdir+"simReport_{}_{}.csv".format(conf.MODEM, param)
+	df_new = pd.DataFrame(data)
+	df_new.to_csv('out/report/{}'.format(fname), index=False)		
 		
 
 class BroadcastPipe(object):

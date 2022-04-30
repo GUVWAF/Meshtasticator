@@ -1,12 +1,26 @@
 # Meshtasticator
-Discrete-event simulator for layers 0-3 of [Meshtastic](https://meshtastic.org/), to assess the scalability of the protocol. 
+Discrete-event simulator for layers 0-3 of [Meshtastic](https://meshtastic.org/), to understand its working and assess the scalability of the protocol.
+
 The source code is based on [this repo](https://github.com/lucagioacchini/lora-network-simulator), which eventually stems from [1].
 
 ## Synopsis
-```./loraSim.py <modem (0-6)> [nr_nodes] [--from-file <file_name>]``` 
+```./loraMesh.py [nr_nodes] [--from-file <file_name>]``` 
 
-### Modem 
-The modem number is defined as below: 
+This runs one simulation, after which it plots the placement of nodes and time schedule for each set of overlapping messages.
+
+If no additional argument is given, you first have to place the nodes on a plot. 
+If the number of nodes is given, it will randomly place nodes in the area. It makes sure that each node can reach at least one other node. Furthermore, all nodes are placed at a configurable minimum distance (MINDIST) from each other. 
+If you use the argument --from-file <file_name>, it reads the location of nodes from a file in */out/coords*. Do not specify the number of nodes in this case.
+
+```./batchSim.py``` 
+
+This runs multiple repetitions of simulations for a set of parameters defined in the script, e.g. the number of nodes. Afterwards, it plots relevant metrics obtained from the simulations. It saves these metrics in */out/report/* to analyze them later on.
+
+## Configurations
+There are some other configurations that can be set in */lib/config.py*, some of which are listed below.
+
+### Modem
+The LoRa modem that is used, as defined below:
 |Modem  | Name | Bandwidth (kHz) | Coding rate | Spreading Factor
 |--|--|--|--|--|
 | 0 |Short Fast|250|8|7
@@ -16,12 +30,6 @@ The modem number is defined as below:
 | 4 |Long Fast|250|8|11
 | 5 |Long Slow|125|8|12
 | 6 |Very Long Slow|31.25|8|12
-
-### Number of nodes
-If number of nodes is specified, the simulation starts with random placement of these nodes. It makes sure that each node can reach at least one other node. Furthermore, all nodes are placed at a configurable minimum distance (MINDIST) from each other. 
-If you do not specify the number of nodes, you can place the nodes yourself on a plot. 
-
-There are some other configurations that can be set in *lib/config.py*, which are listed below.
 
 ### Model
 This feature is referred to the path loss model. The implemented pathloss models are:
@@ -33,15 +41,16 @@ This feature is referred to the path loss model. The implemented pathloss models
 * ```5``` set the 3GPP for suburban macro-cell  
 * ```6``` set the 3GPP for metropolitan macro-cell  
 
-### Interference level 
-Chance that at a given moment there is already a LoRa packet being sent on your channel, outside of the Meshtastic traffic. Given in a ratio from 0 to 1.
+### Period
+Mean period (in ms) with which the nodes generate a new message following an exponential distribution. 
 
-## Example
-Run ```loraMesh.py 0 --from-file collision``` to see a simulation of three nodes, in which some packets might collide due to the hidden node problem.
+### Interference level 
+Chance that at a given moment there is already a LoRa packet being sent on your channel, outside of the Meshtastic traffic. Given in a ratio from 0 to 1. 
 
 ## License
 This work is licensed under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/). 
 
-## Further Reading
+## References
 1. [S. Spinsante, L. Gioacchini and L. Scalise, "A novel experimental-based tool for the design of LoRa networks," 2019 II Workshop on Metrology for Industry 4.0 and IoT (MetroInd4.0&IoT), 2019, pp. 317-322, doi: 10.1109/METROI4.2019.8792833.](https://ieeexplore.ieee.org/document/8792833)
+2. [Martin C. Bor, Utz Roedig, Thiemo Voigt, and Juan M. Alonso, "Do LoRa Low-Power Wide-Area Networks Scale?", In Proceedings of the 19th ACM International Conference on Modeling, Analysis and Simulation of Wireless and Mobile Systems (MSWiM '16), 2016. Association for Computing Machinery, New York, NY, USA, 59–67.](https://doi.org/10.1145/2988287.2989163)
 
