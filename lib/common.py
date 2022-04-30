@@ -139,7 +139,7 @@ def plotSchedule(packets, messages):
 		
 		plt.yticks([0]+list(range(conf.NR_NODES)), label=[str(n) for n in [0]+list(range(conf.NR_NODES))])
 		plt.xlabel('Time (ms)')
-		plt.ylabel('Transmitter ID')
+		plt.ylabel('Node ID')
 		plt.xlim(minTime-0.03*(maxTime-minTime), maxTime)
 		plt.show(block=False)
 		plt.waitforbuttonpress()
