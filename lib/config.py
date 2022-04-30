@@ -5,11 +5,11 @@ MODEL = 5
 NR_NODES = 10
 INTERFERENCE_LEVEL = 0.05
 COLLISION_DUE_TO_INTERFERENCE = False
-RAY = 3000  # m 
+RAY = 1000  # m 
 MINDIST = 5
 SIMTIME = 200000  # ms
 PERIOD = 100000  # mean period of generating a new message with exponential distribution in ms
-PACKETLENGTH = 50 
+PACKETLENGTH = 50  # payload in bytes 
 NOISE_LEVEL = -119.25  # some noise level in dB, based on SNR_MIN and minimum receiver sensitivity
 OX = 0.0  # origin x-coordinate
 OY = 0.0  # origin y-coordinate
@@ -28,7 +28,7 @@ ys = []
 
 # Meshtastic 
 maxRetransmission = 3
-hopLimit = 1
+hopLimit = 3
 
 # from RadioInterface.cpp RegionInfo regions[]
 regions = { "US": {"freq_start": 902e6, "freq_end": 928e6, "power_limit": 30},

@@ -84,6 +84,8 @@ def genScenario():
 	cid = fig.canvas.mpl_connect('button_press_event', onclick)
 	plt.show()
 	if save:
+		if not os.path.isdir('out/coords'):
+			os.mkdir('out/coords')
 		np.save('out/coords/'+filename+'_x.npy', np.array(nodeX))
 		np.save('out/coords/'+filename+'_y.npy', np.array(nodeY))
 	
@@ -156,6 +158,8 @@ def move_figure(f, x, y):
 
 def simReport(data, subdir, param):	
 	fname = subdir+"simReport_{}_{}.csv".format(conf.MODEM, param)
+	if not os.path.isdir('out/report/'+subdir):
+		os.mkdir('out/report/'+subdir)
 	df_new = pd.DataFrame(data)
 	df_new.to_csv('out/report/{}'.format(fname), index=False)		
 		

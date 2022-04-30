@@ -205,7 +205,7 @@ else:
 		pass
 
 
-repetitions = 100
+repetitions = 10
 parameters = [3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25, 30]
 collisions = []
 reachability = []
