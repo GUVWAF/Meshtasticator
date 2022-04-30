@@ -116,7 +116,7 @@ def plotSchedule(packets, messages):
 	for i,t in enumerate(timeSequences):
 		fig = plt.figure()
 		move_figure(fig, 900, 200)
-		plt.suptitle('Time sequence {}/{}\nClick to continue.'.format(i+1, len(timeSequences)))
+		plt.suptitle('Time schedule {}/{}\nClick to continue.'.format(i+1, len(timeSequences)))
 		for p in packets:  # collisions
 			if p.seq in [m.seq for m in t]: 
 				for rxId, bool in enumerate(p.collidedAtN):
