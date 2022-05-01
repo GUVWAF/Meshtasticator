@@ -40,7 +40,6 @@ class MeshPacket():
 
 		# Routing
 		self.retransmissions = conf.maxRetransmission
-		self.wantAck = False
 		self.ackReceived = False
 		self.hopLimit = conf.hopLimit
 
