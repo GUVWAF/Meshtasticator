@@ -28,8 +28,8 @@ def getParams(args):
 			conf.NR_NODES = len(conf.xs)
 		
 	print("Number of nodes:", conf.NR_NODES)
-	print("Modem: ", conf.MODEM)
-	print("Simulation time (s): ", conf.SIMTIME/1000)
+	print("Modem:", conf.MODEM)
+	print("Simulation time (s):", conf.SIMTIME/1000)
 	print("Period (s):", conf.PERIOD/1000)
 	print("Interference level:", conf.INTERFERENCE_LEVEL)
 
@@ -170,14 +170,9 @@ class BroadcastPipe(object):
 		self.capacity = capacity
 		self.pipes = []
 
-	def onAir(self, packet):
-		if not self.pipes:
-			raise RuntimeError('There are no output pipes.')
-		events = [store.put(packet) for store in self.pipes]
-		return self.env.all_of(events)  # Condition event for all "events"
-
 
 	def latency(self, packet):
+		# wait time that packet is on the air
 		yield self.env.timeout(packet.timeOnAir)
 		if not self.pipes:
 			raise RuntimeError('There are no output pipes.')
@@ -187,6 +182,7 @@ class BroadcastPipe(object):
 
 	def put(self, packet):
 		self.env.process(self.latency(packet))
+		# this mimics start of reception
 		if not self.pipes:
 			raise RuntimeError('There are no output pipes.')
 		events = [store.put(packet) for store in self.pipes]

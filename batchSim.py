@@ -26,7 +26,7 @@ class MeshNode():
 		self.nrPacketsSent = 0
 		self.packets = packets
 		self.leastReceivedHopLimit = {}
-		self.isReceiving = False
+		self.isReceiving = []
 		self.isTransmitting = False
 		self.usefulPackets = 0
 
@@ -83,7 +83,7 @@ class MeshNode():
 				verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'generated message', p.seq)
 				self.packets.append(p)
 				self.env.process(self.transmit(p))
-				while True: # retransmit message if no ACK received after timeout (ReliableRouter)
+				while True: # ReliableRouter: retransmit message if no ACK received after timeout 
 					retransmissionMsec = getRetransmissionMsec() 
 					yield self.env.timeout(retransmissionMsec)
 
@@ -122,8 +122,8 @@ class MeshNode():
 			yield self.env.timeout(txTime)
 
 			# wait when currently receiving or transmitting, or channel is active
-			while self.isReceiving or self.isTransmitting or isChannelActive(self, self.env):
-				# verboseprint('Busy Tx/Rx-ing or channel busy')
+			while any(self.isReceiving) or self.isTransmitting or isChannelActive(self, self.env):
+				verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'is busy Tx-ing', self.isTransmitting, 'or Rx-ing', any(self.isReceiving), 'else channel busy!')
 				txTime = setTransmitDelay(self, packet) 
 				yield self.env.timeout(txTime)
 			verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'ends waiting')	
@@ -152,49 +152,53 @@ class MeshNode():
 	def receive(self, in_pipe):
 		while True:
 			p = yield in_pipe.get()
-			if p.sensedByN[self.nodeid] and p.onAirToN[self.nodeid]:  # start of reception
+			if p.sensedByN[self.nodeid] and not p.collidedAtN[self.nodeid] and p.onAirToN[self.nodeid]:  # start of reception
 				if not self.isTransmitting:
 					verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'started receiving packet', p.seq, 'from', p.txNodeId)
 					p.onAirToN[self.nodeid] = False 
-					self.isReceiving = True
-				else:
-					p.collidedAtN[self.nodeid] = False
-			else:  # end of reception
-				if p.sensedByN[self.nodeid] and self.isReceiving:
-					self.isReceiving = False
-					if p.collidedAtN[self.nodeid]:
-						verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'could not decode packet.')
-						continue
-					p.receivedAtN[self.nodeid] = True
-					verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'received packet', p.seq)
-					
-					# update hopLimit for this message
-					if p.seq not in self.leastReceivedHopLimit:  # did not yet receive packet with this seq nr.
-						# verboseprint('Node', self.nodeid, 'received packet nr.', p.seq, 'orig. Tx', p.origTxNodeId, "for the first time.")
-						self.usefulPackets += 1
-						self.leastReceivedHopLimit[p.seq] = p.hopLimit
-					if p.hopLimit < self.leastReceivedHopLimit[p.seq]:  # hop limit of received packet is lower than previously received one
-						self.leastReceivedHopLimit[p.seq] = p.hopLimit	
+					self.isReceiving.append(True)
+				else:  # if you were currently transmitting, you could not have sensed it
+					verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'was transmitting, so could not receive packet', p.seq)
+					p.sensedByN[self.nodeid] = False
+					p.onAirToN[self.nodeid] = False
+			elif p.sensedByN[self.nodeid]:  # end of reception
+				try: 
+					self.isReceiving[self.isReceiving.index(True)] = False 
+				except: 
+					pass
+				if p.collidedAtN[self.nodeid]:
+					verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'could not decode packet.')
+					continue
+				p.receivedAtN[self.nodeid] = True
+				verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'received packet', p.seq)
+				
+				# update hopLimit for this message
+				if p.seq not in self.leastReceivedHopLimit:  # did not yet receive packet with this seq nr.
+					# verboseprint('Node', self.nodeid, 'received packet nr.', p.seq, 'orig. Tx', p.origTxNodeId, "for the first time.")
+					self.usefulPackets += 1
+					self.leastReceivedHopLimit[p.seq] = p.hopLimit
+				if p.hopLimit < self.leastReceivedHopLimit[p.seq]:  # hop limit of received packet is lower than previously received one
+					self.leastReceivedHopLimit[p.seq] = p.hopLimit	
 
-					# check if ACK for own generated message
-					if p.origTxNodeId == self.nodeid: 
-						# verboseprint("Node", self.nodeid, 'received ACK on generated message.')
-						p.ackReceived = True
-						continue
-					
-					# check if ACK for message from others
-					ackReceived = False		
-					for sentPacket in self.packets:
-						if sentPacket.txNodeId == self.nodeid and sentPacket.seq == p.seq:
-							ackReceived = True
-							sentPacket.ackReceived = True
-					
-					# rebroadcasting received message (FloodingRouter)
-					if not ackReceived and p.hopLimit > 0:
-						pNew = MeshPacket(self.nodes, p.origTxNodeId, self.nodeid, self.x, self.y, conf.PACKETLENGTH, p.seq) 
-						pNew.hopLimit = p.hopLimit-1
-						self.packets.append(pNew)
-						self.env.process(self.transmit(pNew))
+				# check if ACK for own generated message
+				if p.origTxNodeId == self.nodeid: 
+					# verboseprint("Node", self.nodeid, 'received ACK on generated message.')
+					p.ackReceived = True
+					continue
+				
+				# check if ACK for message you currently have in queue
+				ackReceived = False		
+				for sentPacket in self.packets:
+					if sentPacket.txNodeId == self.nodeid and sentPacket.seq == p.seq:
+						ackReceived = True
+						sentPacket.ackReceived = True
+				
+				# FloodingRouter: rebroadcasting received message 
+				if not ackReceived and p.hopLimit > 0:
+					pNew = MeshPacket(self.nodes, p.origTxNodeId, self.nodeid, self.x, self.y, conf.PACKETLENGTH, p.seq) 
+					pNew.hopLimit = p.hopLimit-1
+					self.packets.append(pNew)
+					self.env.process(self.transmit(pNew))
 
 
 if VERBOSE:
@@ -205,7 +209,7 @@ else:
 		pass
 
 
-repetitions = 10
+repetitions = 100
 parameters = [3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25, 30]
 collisions = []
 reachability = []
