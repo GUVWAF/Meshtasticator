@@ -18,8 +18,8 @@ def getParams(args):
 		if len(args) > 1:
 			if type(args[1]) == str and ("--from-file" in args[1]):
 				string = args[2]
-				conf.xs = np.load("out/coords/"+string+"_x.npy")
-				conf.ys = np.load("out/coords/"+string+"_y.npy")
+				conf.xs = np.load(os.path.join("out", "coords", string+"_x.npy"))
+				conf.ys = np.load(os.path.join("out", "coords", string+"_y.npy"))
 				conf.NR_NODES = len(conf.xs)
 			else:
 				conf.NR_NODES = int(args[1])
@@ -84,10 +84,12 @@ def genScenario():
 	cid = fig.canvas.mpl_connect('button_press_event', onclick)
 	plt.show()
 	if save:
-		if not os.path.isdir('out/coords'):
-			os.mkdir('out/coords')
-		np.save('out/coords/'+filename+'_x.npy', np.array(nodeX))
-		np.save('out/coords/'+filename+'_y.npy', np.array(nodeY))
+		if not os.path.isdir(os.path.join("out", "coords")):
+			if not os.path.isdir("out"):
+				os.mkdir("out")
+			os.mkdir(os.path.join("out", "coords"))
+		np.save(os.path.join("out", "coords", filename+"_x.npy"), np.array(nodeX))
+		np.save(os.path.join("out", "coords", filename+"_y.npy"), np.array(nodeY))
 	
 	return nodeX, nodeY
 
@@ -157,11 +159,15 @@ def move_figure(f, x, y):
 
 
 def simReport(data, subdir, param):	
-	fname = subdir+"simReport_{}_{}.csv".format(conf.MODEM, param)
-	if not os.path.isdir('out/report/'+subdir):
-		os.mkdir('out/report/'+subdir)
+	fname = "simReport_{}_{}.csv".format(conf.MODEM, param)
+	if not os.path.isdir(os.path.join("out", "report", subdir)):
+		if not os.path.isdir("out"):
+			os.mkdir("out")
+		if not os.path.isdir(os.path.join("out", "report")):
+			os.mkdir(os.path.join("out", "report"))
+		os.mkdir(os.path.join("out", "report", subdir))
 	df_new = pd.DataFrame(data)
-	df_new.to_csv('out/report/{}'.format(fname), index=False)		
+	df_new.to_csv(os.path.join("out", "report", subdir, fname), index=False)		
 		
 
 class BroadcastPipe(object):
@@ -221,11 +227,10 @@ class Graph():
 
 
 	def save(self):
-		if not os.path.isdir('out/graphics'):
-			os.mkdir('out/graphics')
+		if not os.path.isdir(os.path.join("out", "graphics")):
+			if not os.path.isdir("out"):
+				os.mkdir("out")
+			os.mkdir(os.path.join("out", "graphics"))
 			
-		if conf.RANDOM:
-			plt.savefig('out/graphics/placement_'+str(conf.NR_NODES))
-		else:
-			plt.savefig('out/graphics/placement')
+		plt.savefig(os.path.join("out", "graphics", "placement_"+str(conf.NR_NODES)))
 

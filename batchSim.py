@@ -209,8 +209,8 @@ else:
 		pass
 
 
-repetitions = 100
-parameters = [3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25, 30]
+repetitions = 10
+parameters = [3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25]
 collisions = []
 reachability = []
 usefulness = []
@@ -261,7 +261,7 @@ for p, nrNodes in enumerate(parameters):
 			"Reachability": nodeReach, 
 			"Usefulness": nodeUsefulness,
 		}
-		subdir = "hopLim"+str(conf.hopLimit)+"/"
+		subdir = "hopLim"+str(conf.hopLimit)
 		simReport(data, subdir, nrNodes)
 	print('Collision rate average:', round(np.nanmean(collisionRate), 2))
 	print('Reachability average:', round(np.nanmean(nodeReach), 2))
