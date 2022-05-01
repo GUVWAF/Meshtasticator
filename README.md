@@ -8,6 +8,8 @@ The source code is based on [this repo](https://github.com/lucagioacchini/lora-n
 
 This runs one simulation, after which it plots the placement of nodes and time schedule for each set of overlapping messages.
 
+![](/img/placement_schedule.png)
+
 If no additional argument is given, you first have to place the nodes on a plot. 
 If the number of nodes is given, it will randomly place nodes in the area. It makes sure that each node can reach at least one other node. Furthermore, all nodes are placed at a configurable minimum distance (MINDIST) from each other. 
 If you use the argument --from-file <file_name>, it reads the location of nodes from a file in */out/coords*. Do not specify the number of nodes in this case.
@@ -15,6 +17,15 @@ If you use the argument --from-file <file_name>, it reads the location of nodes 
 ```./batchSim.py``` 
 
 This runs multiple repetitions of simulations for a set of parameters defined in the script, e.g. the number of nodes. Afterwards, it plots relevant metrics obtained from the simulations. It saves these metrics in */out/report/* to analyze them later on.
+
+For example, I ran multiple simulations with a different hop limit and number of nodes. As expected, the average number of nodes reached for each generated message increases as the hop limit increases. 
+
+![](/img/reachability_hops.png)
+
+However, it comes at the cost of usefulness, i.e., the amount of received packets that contain a new message (not a duplicate due to rebroadcasting) out of all packets received. 
+
+![](/img/usefulness_hops.png)
+
 
 ## Configurations
 There are some other configurations that can be set in */lib/config.py*, some of which are listed below.
