@@ -18,7 +18,7 @@ If you use the argument --from-file <file_name>, it reads the location of nodes 
 
 This runs multiple repetitions of simulations for a set of parameters defined in the script, e.g. the number of nodes. Afterwards, it plots relevant metrics obtained from the simulations. It saves these metrics in */out/report/* to analyze them later on.
 
-For example, I ran multiple simulations with a different hop limit and number of nodes. As expected, the average number of nodes reached for each generated message increases as the hop limit increases. 
+For example, these are the results of 100 simulations of 200s with a different hop limit and number of nodes. As expected, the average number of nodes reached for each generated message increases as the hop limit increases. 
 
 ![](/img/reachability_hops.png)
 
