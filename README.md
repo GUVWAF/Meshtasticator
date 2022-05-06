@@ -1,10 +1,11 @@
 # Meshtasticator
 Discrete-event simulator for layers 0-3 of [Meshtastic](https://meshtastic.org/), to understand its working and assess the scalability of the protocol.
+It is currently based on [Meshtastic-device commit e7a825d](https://github.com/meshtastic/Meshtastic-device/tree/e7a825d1ba68e303b02ec234e0b0dbaa5e94a2ea).
 
 The source code is based on [this repo](https://github.com/lucagioacchini/lora-network-simulator), which eventually stems from [1].
 
 ## Synopsis
-```./loraMesh.py [nr_nodes] [--from-file <file_name>]``` 
+```python3 loraMesh.py [nr_nodes] [--from-file <file_name>]``` 
 
 This runs one simulation, after which it plots the placement of nodes and time schedule for each set of overlapping messages.
 
@@ -14,7 +15,7 @@ If no additional argument is given, you first have to place the nodes on a plot.
 If the number of nodes is given, it will randomly place nodes in the area. It makes sure that each node can reach at least one other node. Furthermore, all nodes are placed at a configurable minimum distance (MINDIST) from each other. 
 If you use the argument --from-file <file_name>, it reads the location of nodes from a file in */out/coords*. Do not specify the number of nodes in this case.
 
-```./batchSim.py``` 
+```python3 batchSim.py``` 
 
 This runs multiple repetitions of simulations for a set of parameters defined in the script, e.g. the number of nodes. Afterwards, it plots relevant metrics obtained from the simulations. It saves these metrics in */out/report/* to analyze them later on.
 
