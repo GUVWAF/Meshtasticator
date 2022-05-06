@@ -11,7 +11,7 @@ This runs one simulation, after which it plots the placement of nodes and time s
 
 ![](/img/placement_schedule.png)
 
-If no additional argument is given, you first have to place the nodes on a plot. 
+If no argument is given, you first have to place the nodes on a plot. 
 If the number of nodes is given, it will randomly place nodes in the area. It makes sure that each node can reach at least one other node. Furthermore, all nodes are placed at a configurable minimum distance (MINDIST) from each other. 
 If you use the argument --from-file <file_name>, it reads the location of nodes from a file in */out/coords*. Do not specify the number of nodes in this case.
 
