@@ -1,6 +1,7 @@
 from . import config as conf
 import matplotlib
 import matplotlib.pyplot as plt
+matplotlib.use("TkAgg")
 from matplotlib.widgets import Button
 import os
 import simpy
@@ -149,13 +150,7 @@ def plotSchedule(packets, messages):
 
 
 def move_figure(f, x, y):
-  backend = matplotlib.get_backend()
-  if backend == 'TkAgg':
     f.canvas.manager.window.wm_geometry("+%d+%d" % (x, y))
-  elif backend == 'WXAgg':
-    f.canvas.manager.window.SetPosition((x, y))
-  else:
-    f.canvas.manager.window.move(x, y)
 
 
 def simReport(data, subdir, param):	

@@ -1,6 +1,8 @@
+#!/usr/bin/env python3
 import simpy
 import numpy as np
 from matplotlib import pyplot as plt
+matplotlib.use("TkAgg")
 import lib.config as conf
 from lib.common import *
 from lib.packet import *

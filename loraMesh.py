@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import simpy
 import sys
 import lib.config as conf
