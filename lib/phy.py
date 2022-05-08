@@ -4,6 +4,7 @@ import math
 
 VERBOSE = False
 random.seed(conf.SEED)
+MIN_TX_WAIT_MSEC = 100
 
 
 def checkcollision(env, packet, rx_nodeId, packetsAtN):
@@ -77,7 +78,7 @@ def isChannelActive(node, env):
         return True
     for p in node.packetsAtN[node.nodeid]:
         if p.sensedByN[node.nodeid]:
-            if env.now >= p.startTime and env.now <= p.endTime:
+            if env.now >= p.startTime+MIN_TX_WAIT_MSEC and env.now <= p.endTime:
                 return True
     return False
 

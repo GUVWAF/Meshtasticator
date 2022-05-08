@@ -1,9 +1,8 @@
-from .phy import airtime
+from .phy import airtime, MIN_TX_WAIT_MSEC
 from . import config as conf
 import random
 
 VERBOSE = False
-MIN_TX_WAIT_MSEC = 100
 
 
 def setTransmitDelay(node, packet):  # from RadioLibInterface::setTransmitDelay
