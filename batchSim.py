@@ -249,10 +249,13 @@ for p, nrNodes in enumerate(parameters):
 		nrSensed = sum([1 for p in packets for n in nodes if p.sensedByN[n.nodeid] == True])
 		nrReceived = sum([1 for p in packets for n in nodes if p.receivedAtN[n.nodeid] == True])
 		if nrSensed != 0:
-			collisionRate[rep] = float((nrCollisions)/nrSensed)
+			collisionRate[rep] = float((nrCollisions)/nrSensed)*100
 		else:
 			collisionRate[rep] = np.NaN
-		nodeReach[rep] = sum([n.usefulPackets for n in nodes])/(messageSeq*(conf.NR_NODES-1))*100
+		if messageSeq != 0:
+			nodeReach[rep] = sum([n.usefulPackets for n in nodes])/(messageSeq*(conf.NR_NODES-1))*100
+		else: 
+			nodeReach[rep] = np.NaN
 		if nrReceived != 0:
 			nodeUsefulness[rep] = sum([n.usefulPackets for n in nodes])/nrReceived*100  # nr of packets that delivered to a message to a new receiver out of all packets received
 		else: 
