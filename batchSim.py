@@ -235,7 +235,7 @@ for p, nrNodes in enumerate(parameters):
 	collisionRate = [0 for _ in range(repetitions)]
 	meanDelay = [0 for _ in range(repetitions)]
 	meanTxAirUtilization = [0 for _ in range(repetitions)]
-	print("\nStart of", p, "out of", len(parameters)-1, "value", nrNodes)
+	print("\nStart of", p+1, "out of", len(parameters), "value", nrNodes)
 	for rep in range(repetitions):
 		setBatch(rep)
 		random.seed(rep)
