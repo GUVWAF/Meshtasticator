@@ -6,9 +6,11 @@ import random
 random.seed(conf.SEED)
 
 class MeshPacket(): 
-	def __init__(self, nodes, origTxNodeId, txNodeId, x, y, plen, seq):
+	def __init__(self, nodes, origTxNodeId, txNodeId, x, y, plen, seq, genTime):
 		self.origTxNodeId = origTxNodeId
 		self.txNodeId = txNodeId
+		self.seq = seq
+		self.genTime = genTime
 		self.txpow = conf.PTX
 		self.LplAtN = [0 for _ in range(conf.NR_NODES)]
 		self.rssiAtN = [0 for _ in range(conf.NR_NODES)]

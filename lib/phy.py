@@ -5,6 +5,8 @@ import math
 VERBOSE = False
 random.seed(conf.SEED)
 MIN_TX_WAIT_MSEC = 100
+#                           CAD duration         +                   airPropagationTime+TxRxTurnaround+MACprocessing
+min_Tx_wait_msec = 2.5 * (2.0**conf.SFMODEM[conf.MODEM])/conf.BWMODEM[conf.MODEM]*1000 + 0.2 + 0.4 + 7
 
 
 def checkcollision(env, packet, rx_nodeId, packetsAtN):
@@ -78,7 +80,8 @@ def isChannelActive(node, env):
         return True
     for p in node.packetsAtN[node.nodeid]:
         if p.sensedByN[node.nodeid]:
-            if env.now >= p.startTime+MIN_TX_WAIT_MSEC and env.now <= p.endTime:
+            # You will miss detecting a packet if it has just started before you could do CAD
+            if env.now > p.startTime+min_Tx_wait_msec and env.now <= p.endTime:
                 return True
     return False
 

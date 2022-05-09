@@ -11,7 +11,7 @@ random.seed(conf.SEED)
 
 
 class MeshNode():
-	def __init__(self, nodes, env, bc_pipe, nodeid, period, messages, packetsAtN, packets, x=-1, y=-1):
+	def __init__(self, nodes, env, bc_pipe, nodeid, period, messages, packetsAtN, packets, delays, x=-1, y=-1):
 		self.nodeid = nodeid
 		self.x = x
 		self.y = y
@@ -26,10 +26,12 @@ class MeshNode():
 		self.packetsAtN = packetsAtN
 		self.nrPacketsSent = 0
 		self.packets = packets
+		self.delays = delays
 		self.leastReceivedHopLimit = {}
 		self.isReceiving = []
 		self.isTransmitting = False
 		self.usefulPackets = 0
+		self.txAirUtilization = 0
 
 		if x == -1 and y == -1: 
 			foundMin = True
@@ -80,7 +82,7 @@ class MeshNode():
 
 				messageSeq += 1
 				self.messages.append(MeshMessage(self.nodeid, self.env.now, messageSeq))
-				p = MeshPacket(self.nodes, self.nodeid, self.nodeid, self.x, self.y, conf.PACKETLENGTH, messageSeq)  
+				p = MeshPacket(self.nodes, self.nodeid, self.nodeid, self.x, self.y, conf.PACKETLENGTH, messageSeq, self.env.now)  
 				verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'generated message', p.seq)
 				self.packets.append(p)
 				self.env.process(self.transmit(p))
@@ -101,7 +103,7 @@ class MeshNode():
 						break
 					else: 
 						if minRetransmissions > 0:  # generate new packet with same sequence number
-							pNew = MeshPacket(self.nodes, self.nodeid, self.nodeid, self.x, self.y, conf.PACKETLENGTH, p.seq)  
+							pNew = MeshPacket(self.nodes, self.nodeid, self.nodeid, self.x, self.y, conf.PACKETLENGTH, p.seq, p.genTime)  
 							pNew.retransmissions = minRetransmissions-1
 							verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'wants to retransmit its generated packet', p.seq, 'minRetransmissions', minRetransmissions)
 							self.packets.append(pNew)							
@@ -141,6 +143,7 @@ class MeshNode():
 							self.packetsAtN[rx_node.nodeid].append(packet)
 				packet.startTime = self.env.now
 				packet.endTime = self.env.now + packet.timeOnAir
+				self.txAirUtilization += packet.timeOnAir
 				self.bc_pipe.put(packet)
 				self.isTransmitting = True
 				yield self.env.timeout(packet.timeOnAir)
@@ -171,7 +174,8 @@ class MeshNode():
 					verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'could not decode packet.')
 					continue
 				p.receivedAtN[self.nodeid] = True
-				verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'received packet', p.seq)
+				verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'received packet', p.seq, 'with delay', round(env.now-p.genTime, 2))
+				delays.append(env.now-p.genTime)
 				
 				# update hopLimit for this message
 				if p.seq not in self.leastReceivedHopLimit:  # did not yet receive packet with this seq nr.
@@ -196,7 +200,7 @@ class MeshNode():
 				
 				# FloodingRouter: rebroadcasting received message 
 				if not ackReceived and p.hopLimit > 0:
-					pNew = MeshPacket(self.nodes, p.origTxNodeId, self.nodeid, self.x, self.y, conf.PACKETLENGTH, p.seq) 
+					pNew = MeshPacket(self.nodes, p.origTxNodeId, self.nodeid, self.x, self.y, conf.PACKETLENGTH, p.seq, p.genTime) 
 					pNew.hopLimit = p.hopLimit-1
 					self.packets.append(pNew)
 					self.env.process(self.transmit(pNew))
@@ -214,6 +218,7 @@ else:
 nodes = []
 messages = []
 packets = []
+delays = []
 packetsAtN = [[] for _ in range(conf.NR_NODES)]
 messageSeq = 0
 
@@ -224,9 +229,9 @@ bc_pipe = BroadcastPipe(env)
 graph = Graph()
 for i in range(conf.NR_NODES):
 	if len(conf.xs) == 0: 
-		node = MeshNode(nodes, env, bc_pipe, i, conf.PERIOD, messages, packetsAtN, packets)
+		node = MeshNode(nodes, env, bc_pipe, i, conf.PERIOD, messages, packetsAtN, packets, delays)
 	else: 
-		node = MeshNode(nodes, env, bc_pipe, i, conf.PERIOD, messages, packetsAtN, packets, conf.xs[i], conf.ys[i])
+		node = MeshNode(nodes, env, bc_pipe, i, conf.PERIOD, messages, packetsAtN, packets, delays, conf.xs[i], conf.ys[i])
 	nodes.append(node)
 	graph.add(node)
 
@@ -246,6 +251,10 @@ nrSensed = sum([1 for p in packets for n in nodes if p.sensedByN[n.nodeid] == Tr
 print("Number of packets sensed:", nrSensed)
 nrReceived = sum([1 for p in packets for n in nodes if p.receivedAtN[n.nodeid] == True])
 print("Number of packets received:", nrReceived)
+meanDelay = np.nanmean(delays)
+print('Delay average (ms):', round(meanDelay, 2))
+txAirUtilization = sum([n.txAirUtilization for n in nodes])/conf.NR_NODES/conf.SIMTIME*100
+print('Average Tx air utilization:', round(txAirUtilization, 2), '%')
 if nrSensed != 0:
 	collisionRate = float((nrCollisions)/nrSensed)
 	print("Percentage of packets that collided:", round(collisionRate*100, 2))

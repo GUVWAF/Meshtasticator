@@ -10,10 +10,10 @@ from lib.packet import *
 from lib.mac import *
 
 VERBOSE = False
-SAVE = True
+SAVE = False
 
 class MeshNode():
-	def __init__(self, nodes, env, bc_pipe, nodeid, period, messages, packetsAtN, packets, x=-1, y=-1):
+	def __init__(self, nodes, env, bc_pipe, nodeid, period, messages, packetsAtN, packets, delays, x=-1, y=-1):
 		self.nodeid = nodeid
 		self.x = x
 		self.y = y
@@ -28,10 +28,12 @@ class MeshNode():
 		self.packetsAtN = packetsAtN
 		self.nrPacketsSent = 0
 		self.packets = packets
+		self.delays = delays
 		self.leastReceivedHopLimit = {}
 		self.isReceiving = []
 		self.isTransmitting = False
 		self.usefulPackets = 0
+		self.txAirUtilization = 0
 
 		if x == -1 and y == -1: 
 			foundMin = True
@@ -82,7 +84,7 @@ class MeshNode():
 
 				messageSeq += 1
 				self.messages.append(MeshMessage(self.nodeid, self.env.now, messageSeq))
-				p = MeshPacket(self.nodes, self.nodeid, self.nodeid, self.x, self.y, conf.PACKETLENGTH, messageSeq)  
+				p = MeshPacket(self.nodes, self.nodeid, self.nodeid, self.x, self.y, conf.PACKETLENGTH, messageSeq, self.env.now)  
 				verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'generated message', p.seq)
 				self.packets.append(p)
 				self.env.process(self.transmit(p))
@@ -103,7 +105,7 @@ class MeshNode():
 						break
 					else: 
 						if minRetransmissions > 0:  # generate new packet with same sequence number
-							pNew = MeshPacket(self.nodes, self.nodeid, self.nodeid, self.x, self.y, conf.PACKETLENGTH, p.seq)  
+							pNew = MeshPacket(self.nodes, self.nodeid, self.nodeid, self.x, self.y, conf.PACKETLENGTH, p.seq, p.genTime)  
 							pNew.retransmissions = minRetransmissions-1
 							verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'wants to retransmit its generated packet', p.seq, 'minRetransmissions', minRetransmissions)
 							self.packets.append(pNew)							
@@ -143,6 +145,7 @@ class MeshNode():
 							self.packetsAtN[rx_node.nodeid].append(packet)
 				packet.startTime = self.env.now
 				packet.endTime = self.env.now + packet.timeOnAir
+				self.txAirUtilization += packet.timeOnAir
 				self.bc_pipe.put(packet)
 				self.isTransmitting = True
 				yield self.env.timeout(packet.timeOnAir)
@@ -173,7 +176,8 @@ class MeshNode():
 					verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'could not decode packet.')
 					continue
 				p.receivedAtN[self.nodeid] = True
-				verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'received packet', p.seq)
+				verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'received packet', p.seq, 'with delay', round(env.now-p.genTime, 2))
+				delays.append(env.now-p.genTime)
 				
 				# update hopLimit for this message
 				if p.seq not in self.leastReceivedHopLimit:  # did not yet receive packet with this seq nr.
@@ -198,7 +202,7 @@ class MeshNode():
 				
 				# FloodingRouter: rebroadcasting received message 
 				if not ackReceived and p.hopLimit > 0:
-					pNew = MeshPacket(self.nodes, p.origTxNodeId, self.nodeid, self.x, self.y, conf.PACKETLENGTH, p.seq) 
+					pNew = MeshPacket(self.nodes, p.origTxNodeId, self.nodeid, self.x, self.y, conf.PACKETLENGTH, p.seq, p.genTime) 
 					pNew.hopLimit = p.hopLimit-1
 					self.packets.append(pNew)
 					self.env.process(self.transmit(pNew))
@@ -217,14 +221,20 @@ parameters = [3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25]
 collisions = []
 reachability = []
 usefulness = []
+meanDelays = []
+meanTxAirUtils = []
 collisionStds = []
 reachabilityStds = []
 usefulnessStds = []
+delayStds = []
+txAirUtilsStds = []
 for p, nrNodes in enumerate(parameters):
 	conf.NR_NODES = nrNodes
 	nodeReach = [0 for _ in range(repetitions)]
 	nodeUsefulness = [0 for _ in range(repetitions)]
 	collisionRate = [0 for _ in range(repetitions)]
+	meanDelay = [0 for _ in range(repetitions)]
+	meanTxAirUtilization = [0 for _ in range(repetitions)]
 	print("\nStart of", p, "out of", len(parameters)-1, "value", nrNodes)
 	for rep in range(repetitions):
 		setBatch(rep)
@@ -235,12 +245,13 @@ for p, nrNodes in enumerate(parameters):
 		nodes = []
 		messages = []
 		packets = []
+		delays = []
 		packetsAtN = [[] for _ in range(conf.NR_NODES)]
 		messageSeq = 0
 
 		for nodeId in range(conf.NR_NODES):
 			if len(conf.xs) == 0: 
-				node = MeshNode(nodes, env, bc_pipe, nodeId, conf.PERIOD, messages, packetsAtN, packets)
+				node = MeshNode(nodes, env, bc_pipe, nodeId, conf.PERIOD, messages, packetsAtN, packets, delays)
 			nodes.append(node)
 
 		# start simulation
@@ -252,7 +263,7 @@ for p, nrNodes in enumerate(parameters):
 			collisionRate[rep] = float((nrCollisions)/nrSensed)*100
 		else:
 			collisionRate[rep] = np.NaN
-		if messageSeq != 0:
+		if messageSeq != 0: 
 			nodeReach[rep] = sum([n.usefulPackets for n in nodes])/(messageSeq*(conf.NR_NODES-1))*100
 		else: 
 			nodeReach[rep] = np.NaN
@@ -260,29 +271,47 @@ for p, nrNodes in enumerate(parameters):
 			nodeUsefulness[rep] = sum([n.usefulPackets for n in nodes])/nrReceived*100  # nr of packets that delivered to a message to a new receiver out of all packets received
 		else: 
 			nodeUsefulness[rep] = np.NaN
+		meanDelay[rep] = np.nanmean(delays)
+		meanTxAirUtilization[rep] = sum([n.txAirUtilization for n in nodes])/conf.NR_NODES
 	if SAVE:
 		print('Saving to file...')
 		data = {
 			"CollisionRate": collisionRate,
 			"Reachability": nodeReach, 
 			"Usefulness": nodeUsefulness,
+			"meanDelay": meanDelay,
+			"meanTxAirUtil": meanTxAirUtilization
 		}
 		subdir = "hopLim"+str(conf.hopLimit)
 		simReport(data, subdir, nrNodes)
 	print('Collision rate average:', round(np.nanmean(collisionRate), 2))
 	print('Reachability average:', round(np.nanmean(nodeReach), 2))
 	print('Usefulness average:', round(np.nanmean(nodeUsefulness), 2))
+	print('Delay average:', round(np.nanmean(meanDelay), 2))
+	print('Tx air utilization average:', round(np.nanmean(meanTxAirUtilization), 2))
 	collisions.append(np.nanmean(collisionRate))
 	reachability.append(np.nanmean(nodeReach))
 	usefulness.append(np.nanmean(nodeUsefulness))
-	collisionStds.append(np.std(collisionRate))
-	reachabilityStds.append(np.std(nodeReach))
-	usefulnessStds.append(np.std(nodeUsefulness))
+	meanDelays.append(np.nanmean(meanDelay))
+	meanTxAirUtils.append(np.nanmean(meanTxAirUtilization))
+	collisionStds.append(np.nanstd(collisionRate))
+	reachabilityStds.append(np.nanstd(nodeReach))
+	usefulnessStds.append(np.nanstd(nodeUsefulness))
+	delayStds.append(np.nanstd(meanDelay))
+	txAirUtilsStds.append(np.nanstd(meanTxAirUtilization))
 
 
 plt.errorbar(parameters, collisions, collisionStds, fmt='-o', capsize=3, ecolor='red', elinewidth=0.5, capthick=0.5)
 plt.xlabel('#nodes')
 plt.ylabel('Collision rate (%)')
+plt.figure()
+plt.errorbar(parameters, meanDelays, delayStds, fmt='-o', capsize=3, ecolor='red', elinewidth=0.5, capthick=0.5)
+plt.xlabel('#nodes')
+plt.ylabel('Average delay (ms)')
+plt.figure()
+plt.errorbar(parameters, meanTxAirUtils, txAirUtilsStds, fmt='-o', capsize=3, ecolor='red', elinewidth=0.5, capthick=0.5)
+plt.xlabel('#nodes')
+plt.ylabel('Average Tx air utilization (ms)')
 plt.figure()
 plt.errorbar(parameters, reachability, reachabilityStds, fmt='-o', capsize=3, ecolor='red', elinewidth=0.5, capthick=0.5)
 plt.xlabel('#nodes')
