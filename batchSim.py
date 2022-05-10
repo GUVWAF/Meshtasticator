@@ -10,7 +10,7 @@ from lib.packet import *
 from lib.mac import *
 
 VERBOSE = False
-SAVE = False
+SAVE = True
 
 class MeshNode():
 	def __init__(self, nodes, env, bc_pipe, nodeid, period, messages, packetsAtN, packets, delays, x=-1, y=-1):
@@ -67,7 +67,7 @@ class MeshNode():
 				tries += 1
 				if tries > 1000:
 					print('Could not find a location to place the node. Try increasing RAY or decreasing MINDIST.')
-					exit(1)
+					break
 
 		env.process(self.generateMessage())
 		env.process(self.receive(self.bc_pipe.get_output_conn()))
@@ -89,7 +89,7 @@ class MeshNode():
 				self.packets.append(p)
 				self.env.process(self.transmit(p))
 				while True: # ReliableRouter: retransmit message if no ACK received after timeout 
-					retransmissionMsec = getRetransmissionMsec() 
+					retransmissionMsec = getRetransmissionMsec(p) 
 					yield self.env.timeout(retransmissionMsec)
 
 					ackReceived = False  # check whether you received an ACK on the transmitted message
@@ -216,7 +216,7 @@ else:
 		pass
 
 
-repetitions = 10
+repetitions = 100
 parameters = [3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25]
 collisions = []
 reachability = []
@@ -242,17 +242,23 @@ for p, nrNodes in enumerate(parameters):
 		env = simpy.Environment()
 		bc_pipe = BroadcastPipe(env)
 
-		nodes = []
 		messages = []
 		packets = []
 		delays = []
 		packetsAtN = [[] for _ in range(conf.NR_NODES)]
 		messageSeq = 0
 
-		for nodeId in range(conf.NR_NODES):
-			if len(conf.xs) == 0: 
-				node = MeshNode(nodes, env, bc_pipe, nodeId, conf.PERIOD, messages, packetsAtN, packets, delays)
-			nodes.append(node)
+		found = False
+		while not found:
+			nodes = []
+			for nodeId in range(conf.NR_NODES):
+				if len(conf.xs) == 0: 
+					node = MeshNode(nodes, env, bc_pipe, nodeId, conf.PERIOD, messages, packetsAtN, packets, delays)
+					if node.x == -1:
+						break
+				nodes.append(node)
+			if len(nodes) == conf.NR_NODES:
+				found = True
 
 		# start simulation
 		env.run(until=conf.SIMTIME)
@@ -282,7 +288,7 @@ for p, nrNodes in enumerate(parameters):
 			"meanDelay": meanDelay,
 			"meanTxAirUtil": meanTxAirUtilization
 		}
-		subdir = "hopLim"+str(conf.hopLimit)
+		subdir = "Current"
 		simReport(data, subdir, nrNodes)
 	print('Collision rate average:', round(np.nanmean(collisionRate), 2))
 	print('Reachability average:', round(np.nanmean(nodeReach), 2))
