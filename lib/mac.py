@@ -40,9 +40,10 @@ def getTxDelayMsec():  # from RadioInterface::getTxDelayMsec
     return random.randint(MIN_TX_WAIT_MSEC, MIN_TX_WAIT_MSEC + shortPacketMsec) 
 
 
-def getRetransmissionMsec():  # from RadioInterface::getRetransmissionMsec
+def getRetransmissionMsec(packet):  # from RadioInterface::getRetransmissionMsec
+    packetAirtime = int(airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], packet.packetlen, conf.BWMODEM[conf.MODEM]))
     shortPacketMsec = int(airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], 0, conf.BWMODEM[conf.MODEM]))
-    return random.randint(9 * shortPacketMsec, 10 * shortPacketMsec)
+    return 2*packetAirtime + 2*MIN_TX_WAIT_MSEC + shortPacketMsec + shortPacketMsec * 2
 
 
 if VERBOSE:
