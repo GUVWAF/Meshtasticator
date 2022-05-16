@@ -1,6 +1,6 @@
 # Meshtasticator
 Discrete-event simulator for layers 0-3 of [Meshtastic](https://meshtastic.org/), to understand its working and assess the scalability of the protocol.
-It is currently based on [Meshtastic-device commit e7a825d](https://github.com/meshtastic/Meshtastic-device/tree/e7a825d1ba68e303b02ec234e0b0dbaa5e94a2ea).
+It is currently based on [Meshtastic-device commit a7f4263](https://github.com/meshtastic/Meshtastic-device/tree/a7f4263db41e19c6c8875cd338b0e3a39e2ed074).
 
 The source code is based on [this repo](https://github.com/lucagioacchini/lora-network-simulator), which eventually stems from [1].
 
