@@ -44,3 +44,5 @@ SFMODEM = np.array([7, 8, 9, 10, 11, 12, 12]) # spreading factor
 CRMODEM = np.array([8, 8, 8, 8, 8, 8, 8]) # coding rate
 # minimum sensitivity from [2], Table 3 (Very Long Slow is an extrapolation)
 SENSMODEM = np.array([-124.25, -126.75, -128.25, -130.25, -132.75, -133.25, -139.25])
+# minimum received power for CAD (estimated based on SX126x datasheet)
+CADMODEM = np.array([-125, -128, -133, -134, -139, -139, -144])

@@ -15,10 +15,10 @@ class MeshPacket():
 		self.LplAtN = [0 for _ in range(conf.NR_NODES)]
 		self.rssiAtN = [0 for _ in range(conf.NR_NODES)]
 		self.sensedByN = [False for _ in range(conf.NR_NODES)]
+		self.detectedByN = [False for _ in range(conf.NR_NODES)]
 		self.collidedAtN = [False for _ in range(conf.NR_NODES)]
 		self.receivedAtN = [False for _ in range(conf.NR_NODES)]
 		self.onAirToN = [True for _ in range(conf.NR_NODES)]
-		self.seq = seq
 
 		# configuration values
 		self.sf = conf.SFMODEM[conf.MODEM]
@@ -34,6 +34,8 @@ class MeshPacket():
 			self.rssiAtN[rx_node.nodeid] = self.txpow + conf.GL - self.LplAtN[rx_node.nodeid]
 			if self.rssiAtN[rx_node.nodeid] >= conf.SENSMODEM[conf.MODEM]:
 				self.sensedByN[rx_node.nodeid] = True
+			if self.rssiAtN[rx_node.nodeid] >= conf.CADMODEM[conf.MODEM]:
+				self.detectedByN[rx_node.nodeid] = True
 				
 		self.packetlen = plen
 		self.timeOnAir = airtime(self.sf, self.cr, self.packetlen, self.bw)

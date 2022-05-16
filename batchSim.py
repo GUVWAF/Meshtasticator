@@ -286,7 +286,18 @@ for p, nrNodes in enumerate(parameters):
 			"Reachability": nodeReach, 
 			"Usefulness": nodeUsefulness,
 			"meanDelay": meanDelay,
-			"meanTxAirUtil": meanTxAirUtilization
+			"meanTxAirUtil": meanTxAirUtilization,
+			"MODEM": conf.NR_NODES, 
+			"MODEL": conf.MODEL,
+			"NR_NODES": conf.NR_NODES,
+			"INTERFERENCE_LEVEL": conf.INTERFERENCE_LEVEL,
+			"COLLISION_DUE_TO_INTERFERENCE": conf.COLLISION_DUE_TO_INTERFERENCE,
+			"RAY": conf.RAY, 
+			"MINDIST": conf.MINDIST,
+			"SIMTIME": conf.SIMTIME,
+			"PERIOD": conf.PERIOD,
+			"PACKETLENGTH": conf.PACKETLENGTH,  
+			"nrMessages": messageSeq
 		}
 		subdir = "Current"
 		simReport(data, subdir, nrNodes)
