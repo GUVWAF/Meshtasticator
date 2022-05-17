@@ -265,16 +265,17 @@ for p, nrNodes in enumerate(parameters):
 		nrCollisions = sum([1 for p in packets for n in nodes if p.collidedAtN[n.nodeid] == True])
 		nrSensed = sum([1 for p in packets for n in nodes if p.sensedByN[n.nodeid] == True])
 		nrReceived = sum([1 for p in packets for n in nodes if p.receivedAtN[n.nodeid] == True])
+		nrUseful = sum([n.usefulPackets for n in nodes])
 		if nrSensed != 0:
 			collisionRate[rep] = float((nrCollisions)/nrSensed)*100
 		else:
 			collisionRate[rep] = np.NaN
 		if messageSeq != 0: 
-			nodeReach[rep] = sum([n.usefulPackets for n in nodes])/(messageSeq*(conf.NR_NODES-1))*100
+			nodeReach[rep] = nrUseful/(messageSeq*(conf.NR_NODES-1))*100
 		else: 
 			nodeReach[rep] = np.NaN
 		if nrReceived != 0:
-			nodeUsefulness[rep] = sum([n.usefulPackets for n in nodes])/nrReceived*100  # nr of packets that delivered to a message to a new receiver out of all packets received
+			nodeUsefulness[rep] = nrUseful/nrReceived*100  # nr of packets that delivered to a message to a new receiver out of all packets received
 		else: 
 			nodeUsefulness[rep] = np.NaN
 		meanDelay[rep] = np.nanmean(delays)
@@ -287,6 +288,10 @@ for p, nrNodes in enumerate(parameters):
 			"Usefulness": nodeUsefulness,
 			"meanDelay": meanDelay,
 			"meanTxAirUtil": meanTxAirUtilization,
+			"nrCollisions": nrCollisions,
+			"nrSensed": nrSensed,
+			"nrReceived": nrReceived,
+			"usefulPackets": nrUseful, 
 			"MODEM": conf.NR_NODES, 
 			"MODEL": conf.MODEL,
 			"NR_NODES": conf.NR_NODES,
