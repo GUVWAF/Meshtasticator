@@ -1,15 +1,16 @@
 import numpy as np
 
-MODEM = 0
+MODEM = 5
 MODEL = 5
 NR_NODES = 10
-INTERFERENCE_LEVEL = 0.05
+PERIOD = 100000  # mean period of generating a new message with exponential distribution in ms
+PACKETLENGTH = 40  # payload in bytes  
+SIMTIME = 200000  # duration of one simulation in ms 
+INTERFERENCE_LEVEL = 0.05  # chance that at a given moment there is already a LoRa packet being sent on your channel, 
+                           # outside of the Meshtastic traffic. Given in a ratio from 0 to 1.  
 COLLISION_DUE_TO_INTERFERENCE = False
 RAY = 1000  # m 
 MINDIST = 10  # m
-SIMTIME = 200000  # ms
-PERIOD = 100000  # mean period of generating a new message with exponential distribution in ms
-PACKETLENGTH = 50  # payload in bytes 
 NOISE_LEVEL = -119.25  # some noise level in dB, based on SNR_MIN and minimum receiver sensitivity
 OX = 0.0  # origin x-coordinate
 OY = 0.0  # origin y-coordinate
