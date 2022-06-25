@@ -1,8 +1,11 @@
-from .phy import airtime, MIN_TX_WAIT_MSEC
+from .phy import airtime, slotTime
 from . import config as conf
 import random
 
 VERBOSE = False
+CWmin = 2
+CWmax = 8
+PROCESSING_TIME_MSEC = 4500
 
 
 def setTransmitDelay(node, packet):  # from RadioLibInterface::setTransmitDelay
@@ -10,11 +13,10 @@ def setTransmitDelay(node, packet):  # from RadioLibInterface::setTransmitDelay
         if p.seq == packet.seq and p.rssiAtN[node.nodeid] != 0 and p.receivedAtN[node.nodeid] == True: 
             # verboseprint('At time', round(self.env.now, 3), 'pick delay with RSSI of node', self.nodeid, 'is', p.rssiAtN[self.nodeid])
             return getTxDelayMsecWeighted(node, p.rssiAtN[node.nodeid])  # weigthed waiting based on RSSI
-    return getTxDelayMsec()
+    return getTxDelayMsec(node)
 
 
 def getTxDelayMsecWeighted(node, rssi):  # from RadioInterface::getTxDelayMsecWeighted
-    shortPacketMsec = int(airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], 0, conf.BWMODEM[conf.MODEM]))
     snr = rssi-conf.NOISE_LEVEL
     SNR_MIN = -20
     SNR_MAX = 15
@@ -25,25 +27,28 @@ def getTxDelayMsecWeighted(node, rssi):  # from RadioInterface::getTxDelayMsecWe
         verboseprint('Maximum SNR at RSSI of', rssi, 'dBm')  
         snr = SNR_MAX
 
+    CWsize = int((snr - SNR_MIN) * (CWmax - CWmin) / (SNR_MAX - SNR_MIN) + CWmin)
     if node.isRouter == True:
-        minWait = MIN_TX_WAIT_MSEC
-        maxWait = MIN_TX_WAIT_MSEC + (shortPacketMsec / 2)
+        CW = random.randint(0, 2*CWsize-1)
     else:
-        minWait = MIN_TX_WAIT_MSEC + (shortPacketMsec / 2)
-        maxWait = MIN_TX_WAIT_MSEC + shortPacketMsec * 2
-
-    return int((snr - SNR_MIN) * (maxWait - minWait) / (SNR_MAX - SNR_MIN) + minWait);
-
-
-def getTxDelayMsec():  # from RadioInterface::getTxDelayMsec
-    shortPacketMsec = int(airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], 0, conf.BWMODEM[conf.MODEM]))
-    return random.randint(MIN_TX_WAIT_MSEC, MIN_TX_WAIT_MSEC + shortPacketMsec) 
+        CW = random.randint(0, 2**CWsize-1)
+    verboseprint('Node', node.nodeid, 'has CW size', CWsize, 'and picked CW', CW)
+    return CW * slotTime
 
 
-def getRetransmissionMsec(packet):  # from RadioInterface::getRetransmissionMsec
+def getTxDelayMsec(node):  # from RadioInterface::getTxDelayMsec
+    channelUtil = node.airUtilization/node.env.now*100 
+    CWsize = int(channelUtil*(CWmax - CWmin)/100 + CWmin)
+    CW = random.randint(0, 2**CWsize-1)
+    verboseprint('Current channel utilization is', channelUtil, 'So picked CW', CW)
+    return CW * slotTime
+
+
+def getRetransmissionMsec(node, packet):  # from RadioInterface::getRetransmissionMsec
     packetAirtime = int(airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], packet.packetlen, conf.BWMODEM[conf.MODEM]))
-    shortPacketMsec = int(airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], 0, conf.BWMODEM[conf.MODEM]))
-    return 2*packetAirtime + 2*MIN_TX_WAIT_MSEC + shortPacketMsec + shortPacketMsec * 2
+    channelUtil = node.airUtilization/node.env.now*100 
+    CWsize = int(channelUtil*(CWmax - CWmin)/100 + CWmin)
+    return 2*packetAirtime + (2**CWsize + 2**(int((CWmax+CWmin)/2))) * slotTime + PROCESSING_TIME_MSEC;
 
 
 if VERBOSE:

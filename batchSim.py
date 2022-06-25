@@ -34,6 +34,7 @@ class MeshNode():
 		self.isTransmitting = False
 		self.usefulPackets = 0
 		self.txAirUtilization = 0
+		self.airUtilization = 0
 
 		if x == -1 and y == -1: 
 			foundMin = True
@@ -89,7 +90,7 @@ class MeshNode():
 				self.packets.append(p)
 				self.env.process(self.transmit(p))
 				while True: # ReliableRouter: retransmit message if no ACK received after timeout 
-					retransmissionMsec = getRetransmissionMsec(p) 
+					retransmissionMsec = getRetransmissionMsec(self, p) 
 					yield self.env.timeout(retransmissionMsec)
 
 					ackReceived = False  # check whether you received an ACK on the transmitted message
@@ -146,6 +147,7 @@ class MeshNode():
 				packet.startTime = self.env.now
 				packet.endTime = self.env.now + packet.timeOnAir
 				self.txAirUtilization += packet.timeOnAir
+				self.airUtilization += packet.timeOnAir
 				self.bc_pipe.put(packet)
 				self.isTransmitting = True
 				yield self.env.timeout(packet.timeOnAir)
@@ -172,6 +174,7 @@ class MeshNode():
 					self.isReceiving[self.isReceiving.index(True)] = False 
 				except: 
 					pass
+				self.airUtilization += p.timeOnAir
 				if p.collidedAtN[self.nodeid]:
 					verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'could not decode packet.')
 					continue
@@ -242,6 +245,7 @@ for p, nrNodes in enumerate(parameters):
 		env = simpy.Environment()
 		bc_pipe = BroadcastPipe(env)
 
+		nodes = []
 		messages = []
 		packets = []
 		delays = []
