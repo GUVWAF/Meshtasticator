@@ -115,7 +115,9 @@ def plotSchedule(packets, messages):
 		maxSet = max(multiples[ind], key=len)
 		if maxSet not in timeSequences:
 			timeSequences.append(maxSet)
-	# print each time sequence in new figure
+	# do not plot time sequences with messages that were only generated but not sent 
+	timeSequences = [t for t in timeSequences if max([m.endTime for m in t]) != 0]
+	# plot each time sequence in new figure
 	for i,t in enumerate(timeSequences):
 		fig = plt.figure()
 		move_figure(fig, 900, 200)
