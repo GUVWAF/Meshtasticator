@@ -1,5 +1,5 @@
 matplotlib==3.5.0
-numpy==1.21.4
+numpy==1.22.0
 pandas==1.4.1
 simpy==4.0.1
 pillow==9.0.1
