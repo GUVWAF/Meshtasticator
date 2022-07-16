@@ -89,7 +89,7 @@ def airtime(sf, cr, pl, bw):
     H = 0		# implicit header disabled (H=0) or not (H=1)
     DE = 0	   # low data rate optimization enabled (=1) or not (=0)
 
-    if bw == 125 and sf in [11, 12]: # low data rate optimization 
+    if bw == 125e3 and sf in [11, 12]: # low data rate optimization 
         DE = 1
     if sf == 6: # can only have implicit header with SF6
         H = 1
