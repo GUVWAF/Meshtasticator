@@ -43,10 +43,8 @@ class MeshNode():
 			while not (foundMin and foundMax):
 				a = random.random()
 				b = random.random()
-				if b < a:
-					a,b = b,a
-				posx = b*conf.RAY*math.cos(2*math.pi*a/b)+conf.OX
-				posy = b*conf.RAY*math.sin(2*math.pi*a/b)+conf.OY
+				posx = a*conf.XSIZE+conf.OX-conf.XSIZE/2
+				posy = b*conf.YSIZE+conf.OY-conf.YSIZE/2
 				if len(nodes) > 0:
 					for n in nodes:
 						dist = np.sqrt(((abs(n.x-posx))**2)+((abs(n.y-posy))**2))
@@ -67,7 +65,7 @@ class MeshNode():
 					foundMax = True
 				tries += 1
 				if tries > 1000:
-					print('Could not find a location to place the node. Try increasing RAY or decreasing MINDIST.')
+					print('Could not find a location to place the node. Try increasing XSIZE/YSIZE or decreasing MINDIST.')
 					break
 
 		env.process(self.generateMessage())
@@ -308,7 +306,7 @@ for p, nrNodes in enumerate(parameters):
 			"PACKETLENGTH": conf.PACKETLENGTH,  
 			"nrMessages": messageSeq
 		}
-		subdir = "Current"
+		subdir = "hopLimit3"
 		simReport(data, subdir, nrNodes)
 	print('Collision rate average:', round(np.nanmean(collisionRate), 2))
 	print('Reachability average:', round(np.nanmean(nodeReach), 2))

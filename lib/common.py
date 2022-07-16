@@ -52,8 +52,8 @@ def genScenario():
 	plt.title("Double click to place nodes. Press continue to start the simulation.")
 	plt.xlabel('x (m)')
 	plt.ylabel('y (m)')
-	plt.xlim(-(conf.OX+conf.RAY+1), conf.OX+conf.RAY+1)
-	plt.ylim(-(conf.OY+conf.RAY+1), conf.OY+conf.RAY+1)
+	plt.xlim(-(conf.XSIZE/2+1)+conf.OX, conf.OX+conf.XSIZE/2+1)
+	plt.ylim(-(conf.YSIZE/2+1)+conf.OY, conf.OY+conf.YSIZE/2+1)
 	add_button_ax = fig.add_axes([0.5-0.05, 0.05, 0.2, 0.04])
 	add_button = Button(add_button_ax, 'Continue')
 
@@ -61,8 +61,8 @@ def genScenario():
 		ax.cla()
 		ax.set_xlabel('x (m)')
 		ax.set_ylabel('y (m)')
-		ax.set_xlim(-(conf.OX+conf.RAY+1), conf.OX+conf.RAY+1)
-		ax.set_ylim(-(conf.OY+conf.RAY+1), conf.OY+conf.RAY+1)
+		ax.set_xlim(-(conf.XSIZE/2+1)+conf.OX, conf.OX+conf.XSIZE/2+1)
+		ax.set_ylim(-(conf.YSIZE/2+1)+conf.OY, conf.OY+conf.YSIZE/2+1)
 		ax.set_title("Double click to place nodes. Press continue to start the simulation.")
 		ax.scatter(nodeX, nodeY)
 		fig.canvas.draw_idle()
@@ -201,14 +201,14 @@ class BroadcastPipe(object):
 class Graph():
 	def __init__(self):
 		
-		self.xmax = conf.OX + conf.RAY +1
-		self.ymax = conf.OY + conf.RAY +1
+		self.xmax = conf.XSIZE/2 +1
+		self.ymax = conf.YSIZE/2 +1
 		self.fig, self.ax = plt.subplots()
 
 		plt.suptitle('Placement of {} nodes'.format(
 				conf.NR_NODES))
-		self.ax.set_xlim(-self.xmax, self.xmax)
-		self.ax.set_ylim(-self.ymax, self.ymax)
+		self.ax.set_xlim(-self.xmax+conf.OX, self.xmax+conf.OX)
+		self.ax.set_ylim(-self.ymax+conf.OY, self.ymax+conf.OY)
 		self.ax.set_xlabel('x (m)')
 		self.ax.set_ylabel('y (m)')
 		move_figure(self.fig, 200, 200)
