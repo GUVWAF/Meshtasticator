@@ -24,7 +24,7 @@ For running multiple repetitions of simulations for a set of parameters, e.g. th
 
 ```python3 batchSim.py``` 
 
-After the simulations are done, it plots relevant metrics obtained from the simulations. It saves these metrics in */out/report/* to analyze them later on.  
+After the simulations are done, it plots relevant metrics obtained from the simulations. It saves these metrics in */out/report/* to analyze them later on. See *plotExample.py* for an example Python script to plot the results.  
 
 For example, these are the results of 100 simulations of 200s with a different hop limit and number of nodes. As expected, the average number of nodes reached for each generated message increases as the hop limit increases. 
 
@@ -39,15 +39,15 @@ You can change some of the configurations to model your scenario in */lib/config
 
 ### Modem
 The LoRa modem ([see Meshtastic channel settings](https://meshtastic.org/docs/settings#channel-settings)) that is used, as defined below:
-|Modem  | Name | Bandwidth (kHz) | Coding rate | Spreading Factor
-|--|--|--|--|--|
-| 0 |Short Fast|250|4/8|7
-| 1 |Short Slow|250|4/8|8
-| 2 |Mid Fast|250|4/8|9
-| 3 |Mid Slow|250|4/8|10
-| 4 |Long Fast|250|4/8|11
-| 5 |Long Slow|125|4/8|12
-| 6 |Very Long Slow|31.25|4/8|12
+|Modem  | Name | Bandwidth (kHz) | Coding rate | Spreading Factor | Data rate (bps)
+|--|--|--|--|--|--| 
+| 0 |Short Fast|250|4/8|7|3865
+| 1 |Short Slow|250|4/8|8|2193
+| 2 |Mid Fast|250|4/8|9|1219
+| 3 |Mid Slow|250|4/8|10|659.3
+| 4 |Long Fast|250|4/8|11|358.7
+| 5 |Long Slow|125|4/8|12|98.34
+| 6 |Very Long Slow|31.25|4/8|12|24.59
 
 ### Period
 Mean period (in ms) with which the nodes generate a new message following an exponential distribution. E.g. if you set it to 300s, each node will generate a message on average once every five minutes. 
