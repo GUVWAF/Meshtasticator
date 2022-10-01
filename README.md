@@ -2,6 +2,8 @@
 Discrete-event simulator for layers 0-3 of [Meshtastic](https://meshtastic.org/), to understand its working and assess the performance of your scenario or the scalability of the protocol.
 It is currently based on [Meshtastic-device commit 63c8f15](https://github.com/meshtastic/Meshtastic-device/commit/63c8f15d387b724bdcfb33d277d401e81ba6a73e), i.e. what will become Meshtastic 2.0. 
 
+For an interactive simulator using multiple instances of the Linux native application, see [this document](INTERACTIVE_SIM.md). 
+
 The source code is based on [this repo](https://github.com/lucagioacchini/lora-network-simulator), which eventually stems from [1].
 
 ## Usage
