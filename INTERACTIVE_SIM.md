@@ -8,6 +8,10 @@ The Python script should be run as follows:
 
 ```python3 interactiveSim.py <nrNodes> [--p <full-path-to-program>]```,
 
-where nrNodes is the amount of instances you want to launch. Note that for each instance a terminal and TCP port (starting at 4403) is opened. 
+where nrNodes is the number of instances you want to launch. Note that for each instance a terminal and TCP port (starting at 4403) is opened. 
 Before running this, build the Linux native application of Meshtastic-device which can be done on your Linux PC using PlatformIO. Select 'native' and click on 'build'. Locate the generated binary file, which will probably be in *Meshtastic-device/.pio/build/native*. Either copy the file called 'program' to the directory where you will be running the Python script from, or add the full path as argument after *--p*. For example: ```python3 interactiveSim.py 3 --p /home/User/Meshtastic-device/.pio/build/native```. 
+
+
+
+https://user-images.githubusercontent.com/78759985/193409669-e8b6be37-6c73-40b3-84a4-8757ab4b7dfd.mp4
 
