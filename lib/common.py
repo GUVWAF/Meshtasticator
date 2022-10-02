@@ -1,4 +1,5 @@
 from . import config as conf
+from . import phy 
 import matplotlib
 import matplotlib.pyplot as plt
 matplotlib.use("TkAgg")
@@ -8,7 +9,7 @@ import simpy
 import pandas as pd
 import time
 import numpy as np
-	
+import random
 	
 def getParams(args):
 	if len(args) > 3:
@@ -95,6 +96,44 @@ def genScenario():
 	return nodeX, nodeY
 
 
+def findRandomPosition(nodes):
+	foundMin = True
+	foundMax = False
+	tries = 0
+	while not (foundMin and foundMax):
+		a = random.random()
+		b = random.random()
+		posx = a*conf.XSIZE+conf.OX-conf.XSIZE/2
+		posy = b*conf.YSIZE+conf.OY-conf.YSIZE/2
+		if len(nodes) > 0:
+			for n in nodes:
+				dist = calcDist(n.x, n.y, posx, posy)
+				if dist < conf.MINDIST:
+					foundMin = False
+					break
+				pathLoss = phy.estimatePathLoss(dist, conf.REGION["freq_start"])
+				rssi = conf.PTX + conf.GL - pathLoss
+				if rssi >= conf.SENSMODEM[conf.MODEM]:
+					foundMax = True
+			if foundMin and foundMax:
+				x = posx
+				y = posy
+		else:
+			x = posx
+			y = posy
+			foundMin = True
+			foundMax = True
+		tries += 1
+		if tries > 1000:
+			print('Could not find a location to place the node. Try increasing XSIZE/YSIZE or decreasing MINDIST.')
+			break
+	return x,y
+
+
+def calcDist(x0, y0, x1, y1): 
+	return np.sqrt(((abs(x0-x1))**2)+((abs(y0-y1))**2))
+
+
 def plotSchedule(packets, messages):
 	maxTime = 0
 	# combine all messages with overlapping packets in one time sequence 
@@ -151,8 +190,8 @@ def plotSchedule(packets, messages):
 		plt.close()
 
 
-def move_figure(f, x, y):
-    f.canvas.manager.window.wm_geometry("+%d+%d" % (x, y))
+def move_figure(fig, x, y):
+  fig.canvas.manager.window.wm_geometry("+%d+%d" % (x, y))
 
 
 def simReport(data, subdir, param):	
@@ -200,9 +239,11 @@ class BroadcastPipe(object):
 
 class Graph():
 	def __init__(self):
-		
 		self.xmax = conf.XSIZE/2 +1
 		self.ymax = conf.YSIZE/2 +1
+		self.arrows = []
+		plt.ion()
+		plt.show()
 		self.fig, self.ax = plt.subplots()
 
 		plt.suptitle('Placement of {} nodes'.format(
@@ -212,15 +253,28 @@ class Graph():
 		self.ax.set_xlabel('x (m)')
 		self.ax.set_ylabel('y (m)')
 		move_figure(self.fig, 200, 200)
+		self.fig.canvas.draw()
+		self.fig.canvas.flush_events()
+
 		
-		
-	def add(self, node):
+	def addNode(self, node):
 		# place the node
 		if not conf.RANDOM:
 			self.ax.annotate(str(node.nodeid), (node.x, node.y))
 		self.ax.plot(node.x, node.y, marker="o", markersize = 2.5, color = "grey")
+		self.fig.canvas.draw()
 		self.fig.canvas.flush_events()
 		time.sleep(.0001)
+
+
+	def update(self):
+		for a in self.arrows:
+			tx = a[0]
+			rxs = a[1]
+			for rx in rxs:
+				self.ax.arrow(tx.x, tx.y, rx.x-tx.x, rx.y-tx.y, length_includes_head=True, head_width=20, head_length=40, fc='k', ec='k')
+		self.fig.canvas.draw()
+		self.fig.canvas.flush_events()
 
 
 	def save(self):

@@ -6,11 +6,27 @@
 import sys
 import os
 import time
+from lib.common import *
+from matplotlib.animation import FuncAnimation
 from pubsub import pub
 import meshtastic.tcp_interface
 from meshtastic import mesh_pb2
 HW_ID_OFFSET = 16
 TCP_PORT_OFFSET = 4403
+
+
+class interactiveNode(): 
+    def __init__(self, nodes, nodeId, hwId, TCPPort, x=-1, y=-1):
+        self.nodeid = nodeId
+        self.x = x
+        self.y = y
+        self.hwId = hwId
+        self.TCPPort = TCPPort 
+        if self.x == -1 and self.y == -1:
+            self.x, self.y = findRandomPosition(nodes)
+
+    def addInterface(self, iface):
+        self.iface = iface
 
 
 def forwardPacket(iface, packet): 
@@ -44,63 +60,72 @@ def forwardPacket(iface, packet):
     iface._sendToRadio(toRadio)
 
 
-def onReceive(interface, packet, ifaceList): 
+def onReceive(interface, packet, nodes): 
     print("Node", interface.myInfo.my_node_num-HW_ID_OFFSET, "sent", packet["decoded"]["simulator"]["portnum"], "with id", packet["id"], "over the air!")
     # TODO forward only to those nodes that are in range 
-    for i in [iface for iface in ifaceList if iface.portNumber != interface.portNumber]:
-        forwardPacket(i, packet)
+    transmitter = next((n for n in nodes if n.TCPPort == interface.portNumber), None)
+    receivers = [n for n in nodes if n.nodeid != transmitter.nodeid]
+    for r in receivers:
+        forwardPacket(r.iface, packet)
+    graph.arrows.append((transmitter, receivers))
 
 
 if len(sys.argv) < 2:
-    print("Number of nodes not specified, picked 2.")
-    nrNodes = 2
+    [xs, ys] = genScenario()
+    conf.NR_NODES = len(xs)
     pathToProgram = os.getcwd()+"/"
 else:
     if int(sys.argv[1]) > 10:
         print("Not sure if you want to start more than 10 terminals. Exiting.")
         exit(1)
-    nrNodes = int(sys.argv[1])
+    conf.NR_NODES = int(sys.argv[1])
+    xs = []
+    ys = []
     if len(sys.argv) > 2 and type(sys.argv[2]) == str and ("--p" in sys.argv[2]):
         string = sys.argv[3]
         pathToProgram = string
     else:
         pathToProgram = os.getcwd()+"/"
-        
 
-nodeIds = range(nrNodes)
-hwIds = range(HW_ID_OFFSET, HW_ID_OFFSET+nrNodes)
-portNums = range(TCP_PORT_OFFSET, TCP_PORT_OFFSET+nrNodes)
-for n,h,p in zip(nodeIds, hwIds, portNums):
-    cmdString = "gnome-terminal --title='Node "+str(n)+"' -- "+pathToProgram+"program -e -d "+os.path.expanduser('~')+"/.portduino/node"+str(n)+" -h "+str(h)+" -p "+str(p)
+nodes = []
+graph = Graph()
+for n in range(conf.NR_NODES):
+    if len(xs) == 0: 
+        node = interactiveNode(nodes, n, n+HW_ID_OFFSET, n+TCP_PORT_OFFSET)
+    else:
+        node = interactiveNode(nodes, n, n+HW_ID_OFFSET, n+TCP_PORT_OFFSET, xs[n], ys[n])
+    nodes.append(node)
+    graph.addNode(node)
+
+for n in nodes:
+    cmdString = "gnome-terminal --title='Node "+str(n.nodeid)+"' -- "+pathToProgram+"program -e -d "+os.path.expanduser('~')+"/.portduino/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)
     os.system(cmdString) 
 
 time.sleep(4)  # Allow instances to start up their TCP service 
-
-ifaceList = []
 try:
-    for p in portNums:
-        iface = meshtastic.tcp_interface.TCPInterface(hostname="localhost", portNumber=p)
-        ifaceList.append(iface)
-    pub.subscribe(onReceive, "meshtastic.receive.simulator", ifaceList=ifaceList)
+    for n in nodes:
+        iface = meshtastic.tcp_interface.TCPInterface(hostname="localhost", portNumber=n.TCPPort)
+        n.addInterface(iface)
+    pub.subscribe(onReceive, "meshtastic.receive.simulator", nodes=nodes)
 except(Exception) as ex:
     print(f"Error: Could not connect to native program: {ex}")
-    for i in ifaceList:
-        i.close()
+    for n in nodes:
+        n.iface.close()
     os.system("killall "+pathToProgram+"program")
     sys.exit(1)
 
 try:
     while True:
-        time.sleep(40)  # Wait until nodeInfo messages are sent
+        time.sleep(20)  # Wait until nodeInfo messages are sent
+        graph.update()
         text = "Hi there, how are you doing?"
-        ifaceList[0].sendText(text)
+        nodes[0].iface.sendText(text)
         # Add any additional messaging here
         time.sleep(300)
-
 except KeyboardInterrupt:
     print("\nClosing all nodes...")
-    for i in ifaceList:
-        i.close()
+    for n in nodes:
+        n.iface.close()
     os.system("killall "+pathToProgram+"program")
     sys.exit(1)
 
