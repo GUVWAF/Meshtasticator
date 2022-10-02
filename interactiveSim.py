@@ -54,6 +54,7 @@ def onReceive(interface, packet, ifaceList):
 if len(sys.argv) < 2:
     print("Number of nodes not specified, picked 2.")
     nrNodes = 2
+    pathToProgram = os.getcwd()+"/"
 else:
     if int(sys.argv[1]) > 10:
         print("Not sure if you want to start more than 10 terminals. Exiting.")
