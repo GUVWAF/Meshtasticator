@@ -3,7 +3,7 @@
 The Python script *interactiveSim.py* uses the [Linux native application of Meshtastic](https://meshtastic.org/docs/software/other/docker) in order to simulate multiple instances of the device software. They will communicate using TCP via this script as if they did using their LoRa chip. Currently it will forward a message from a node to all other nodes, thus assuming all nodes are in range of each other. In the future it should calculate which nodes will receive the packet based on their simulated positions and collisions with other packets. 
 
 ## Usage
-The script requires the [Meshtastic API](https://meshtastic.org/docs/software/python/python-installation). 
+The script requires the [Meshtastic API](https://meshtastic.org/docs/software/python/python-installation) version >=1.3.37. 
 The Python script should be run as follows: 
 
 ```python3 interactiveSim.py <nrNodes> [--p <full-path-to-program>]```,
