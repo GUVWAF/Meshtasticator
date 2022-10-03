@@ -3,7 +3,7 @@ from . import phy
 import matplotlib
 import matplotlib.pyplot as plt
 matplotlib.use("TkAgg")
-from matplotlib.widgets import Button, TextBox
+from matplotlib.widgets import Button
 import os
 import simpy
 import pandas as pd
@@ -241,7 +241,9 @@ class Graph():
 	def __init__(self):
 		self.xmax = conf.XSIZE/2 +1
 		self.ymax = conf.YSIZE/2 +1
+		self.packets = []
 		self.arrows = []
+		self.txts = []
 		# plt.ion()
 		self.fig, self.ax = plt.subplots()
 		plt.suptitle('Placement of {} nodes'.format(
@@ -268,18 +270,31 @@ class Graph():
 		plt.pause(0.001)
 
 
+	def clearRoute(self):
+		for arr in self.arrows.copy():
+				arr.remove()
+				self.arrows.remove(arr)
+		for txt in self.txts.copy():
+			txt.remove()
+			self.txts.remove(txt)
+
+
 	def update(self, messageId):
-		a = next((a for a in self.arrows if a[2] == messageId), None)
-		if a:
-			tx = a[0]
-			rxs = a[1]
-			for rx in rxs:
-				self.ax.arrow(tx.x, tx.y, rx.x-tx.x, rx.y-tx.y, length_includes_head=True, head_width=20, head_length=40, fc='k', ec='k')
-				self.ax.text(tx.x+(rx.x-tx.x)/2, tx.y+(rx.y-tx.y)/2, messageId)
+		packets = [p for p in self.packets if p.localId == messageId]
+		if len(packets) > 0:
+			self.clearRoute()
+			for p in packets:
+				tx = p.transmitter
+				rxs = p.receivers
+				for rx in rxs:
+					self.arrows.append(self.ax.arrow(tx.x, tx.y, rx.x-tx.x, rx.y-tx.y, length_includes_head=True,
+					 	head_width=20, head_length=40, fc=plt.cm.Set1(tx.nodeid), ec=plt.cm.Set1(tx.nodeid)))
+					#self.txts.append(self.ax.text(tx.x+(tx.x-rx.x)/2, tx.y+(tx.y-rx.y)/2, "HL="+str(p.packet["hopLimit"])))
+			self.fig.suptitle('Route of message '+str(messageId))
 			self.fig.canvas.draw()
 			self.fig.canvas.flush_events()
 		else:
-			print('Could not find message.')
+			print('Could not find message ID.')
 
 
 	# def submit(self, expression):

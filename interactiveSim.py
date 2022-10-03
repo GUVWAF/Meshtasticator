@@ -33,6 +33,10 @@ class realPacket():
     def __init__(self, packet, id):
         self.packet = packet
         self.localId = id
+        
+    def setTxRxs(self, transmitter, receivers):
+        self.transmitter = transmitter
+        self.receivers = receivers
 
 
 def forwardPacket(iface, packet): 
@@ -69,26 +73,26 @@ def forwardPacket(iface, packet):
 def onReceive(interface, packet): 
     global messageId
     existingMsgId = next((m.localId for m in messages if m.packet["id"] == packet["id"]), None)
-    if existingMsgId:
+    if existingMsgId != None:
         mId = existingMsgId
-        print('Existing', mId, [m.packet["id"] for m in messages], packet["id"])
     else: 
         messageId += 1
         mId = messageId
-        print('New', mId, [m.packet["id"] for m in messages], packet["id"])
-    messages.append(realPacket(packet, mId))
+    rP = realPacket(packet, mId)
+    messages.append(rP)
     print("Node", interface.myInfo.my_node_num-HW_ID_OFFSET, "sent", packet["decoded"]["simulator"]["portnum"], "with id", mId, "over the air!")
     # TODO forward only to those nodes that are in range 
     transmitter = next((n for n in nodes if n.TCPPort == interface.portNumber), None)
     receivers = [n for n in nodes if n.nodeid != transmitter.nodeid]
+    rP.setTxRxs(transmitter, receivers)
     for r in receivers:
         forwardPacket(r.iface, packet)
-    #if packet["decoded"]["simulator"]["portnum"] == "TEXT_MESSAGE_APP":
-    graph.arrows.append((transmitter, receivers, mId))
+    graph.packets.append(rP)
 
 
 def closeNodes():
     print("\nClosing all nodes...")
+    pub.unsubAll()
     for n in nodes:
         n.iface.close()
     os.system("killall "+pathToProgram+"program")
@@ -153,5 +157,5 @@ except KeyboardInterrupt:
     closeNodes()
 
 while True: 
-    mId = input('Message to plot: ')
+    mId = input('Message ID to plot: ')
     graph.update(int(mId))
