@@ -204,7 +204,7 @@ for i in range(conf.NR_NODES):
 	else: 
 		node = MeshNode(nodes, env, bc_pipe, i, conf.PERIOD, messages, packetsAtN, packets, delays, conf.xs[i], conf.ys[i])
 	nodes.append(node)
-	graph.add(node)
+	graph.addNode(node)
 
 # start simulation
 print("\n====== START OF SIMULATION ======")

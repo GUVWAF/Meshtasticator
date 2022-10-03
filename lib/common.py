@@ -3,7 +3,7 @@ from . import phy
 import matplotlib
 import matplotlib.pyplot as plt
 matplotlib.use("TkAgg")
-from matplotlib.widgets import Button
+from matplotlib.widgets import Button, TextBox
 import os
 import simpy
 import pandas as pd
@@ -242,10 +242,8 @@ class Graph():
 		self.xmax = conf.XSIZE/2 +1
 		self.ymax = conf.YSIZE/2 +1
 		self.arrows = []
-		plt.ion()
-		plt.show()
+		# plt.ion()
 		self.fig, self.ax = plt.subplots()
-
 		plt.suptitle('Placement of {} nodes'.format(
 				conf.NR_NODES))
 		self.ax.set_xlim(-self.xmax+conf.OX, self.xmax+conf.OX)
@@ -253,8 +251,11 @@ class Graph():
 		self.ax.set_xlabel('x (m)')
 		self.ax.set_ylabel('y (m)')
 		move_figure(self.fig, 200, 200)
-		self.fig.canvas.draw()
-		self.fig.canvas.flush_events()
+		# self.fig.subplots_adjust(bottom=0.2) 
+		# axbox = self.fig.add_axes([0.1, 0.02, 0.8, 0.075])
+		# text_box = TextBox(axbox, "Show route of message: ")
+		# text_box.on_submit(self.submit)
+		# self.fig.canvas.draw_idle()
 
 		
 	def addNode(self, node):
@@ -262,19 +263,34 @@ class Graph():
 		if not conf.RANDOM:
 			self.ax.annotate(str(node.nodeid), (node.x, node.y))
 		self.ax.plot(node.x, node.y, marker="o", markersize = 2.5, color = "grey")
-		self.fig.canvas.draw()
-		self.fig.canvas.flush_events()
-		time.sleep(.0001)
+		self.fig.canvas.draw_idle()
+		# self.fig.canvas.flush_events()
+		plt.pause(0.001)
 
 
-	def update(self):
-		for a in self.arrows:
+	def update(self, messageId):
+		a = next((a for a in self.arrows if a[2] == messageId), None)
+		if a:
 			tx = a[0]
 			rxs = a[1]
 			for rx in rxs:
 				self.ax.arrow(tx.x, tx.y, rx.x-tx.x, rx.y-tx.y, length_includes_head=True, head_width=20, head_length=40, fc='k', ec='k')
-		self.fig.canvas.draw()
-		self.fig.canvas.flush_events()
+				self.ax.text(tx.x+(rx.x-tx.x)/2, tx.y+(rx.y-tx.y)/2, messageId)
+			self.fig.canvas.draw()
+			self.fig.canvas.flush_events()
+		else:
+			print('Could not find message.')
+
+
+	# def submit(self, expression):
+	# 	messageId = int(eval(expression))
+	# 	self.update(messageId)
+	# 	plt.draw()
+
+	# def addTextBox(self):
+	# 	axbox = self.fig.add_axes([0.1, 0.05, 0.8, 0.075])
+	# 	text_box = TextBox(axbox, "Show route of message: ")
+	# 	text_box.on_submit(self.submit)
 
 
 	def save(self):

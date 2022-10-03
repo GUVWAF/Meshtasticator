@@ -7,7 +7,7 @@ import sys
 import os
 import time
 from lib.common import *
-from matplotlib.animation import FuncAnimation
+import select
 from pubsub import pub
 import meshtastic.tcp_interface
 from meshtastic import mesh_pb2
@@ -27,6 +27,12 @@ class interactiveNode():
 
     def addInterface(self, iface):
         self.iface = iface
+
+
+class realPacket():
+    def __init__(self, packet, id):
+        self.packet = packet
+        self.localId = id
 
 
 def forwardPacket(iface, packet): 
@@ -60,14 +66,32 @@ def forwardPacket(iface, packet):
     iface._sendToRadio(toRadio)
 
 
-def onReceive(interface, packet, nodes): 
-    print("Node", interface.myInfo.my_node_num-HW_ID_OFFSET, "sent", packet["decoded"]["simulator"]["portnum"], "with id", packet["id"], "over the air!")
+def onReceive(interface, packet): 
+    global messageId
+    existingMsgId = next((m.localId for m in messages if m.packet["id"] == packet["id"]), None)
+    if existingMsgId:
+        mId = existingMsgId
+        print('Existing', mId, [m.packet["id"] for m in messages], packet["id"])
+    else: 
+        messageId += 1
+        mId = messageId
+        print('New', mId, [m.packet["id"] for m in messages], packet["id"])
+    messages.append(realPacket(packet, mId))
+    print("Node", interface.myInfo.my_node_num-HW_ID_OFFSET, "sent", packet["decoded"]["simulator"]["portnum"], "with id", mId, "over the air!")
     # TODO forward only to those nodes that are in range 
     transmitter = next((n for n in nodes if n.TCPPort == interface.portNumber), None)
     receivers = [n for n in nodes if n.nodeid != transmitter.nodeid]
     for r in receivers:
         forwardPacket(r.iface, packet)
-    graph.arrows.append((transmitter, receivers))
+    #if packet["decoded"]["simulator"]["portnum"] == "TEXT_MESSAGE_APP":
+    graph.arrows.append((transmitter, receivers, mId))
+
+
+def closeNodes():
+    print("\nClosing all nodes...")
+    for n in nodes:
+        n.iface.close()
+    os.system("killall "+pathToProgram+"program")
 
 
 if len(sys.argv) < 2:
@@ -101,12 +125,15 @@ for n in nodes:
     cmdString = "gnome-terminal --title='Node "+str(n.nodeid)+"' -- "+pathToProgram+"program -e -d "+os.path.expanduser('~')+"/.portduino/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)
     os.system(cmdString) 
 
+messages = []
+global messageId
+messageId = -1
 time.sleep(4)  # Allow instances to start up their TCP service 
 try:
     for n in nodes:
         iface = meshtastic.tcp_interface.TCPInterface(hostname="localhost", portNumber=n.TCPPort)
         n.addInterface(iface)
-    pub.subscribe(onReceive, "meshtastic.receive.simulator", nodes=nodes)
+    pub.subscribe(onReceive, "meshtastic.receive.simulator")
 except(Exception) as ex:
     print(f"Error: Could not connect to native program: {ex}")
     for n in nodes:
@@ -114,19 +141,17 @@ except(Exception) as ex:
     os.system("killall "+pathToProgram+"program")
     sys.exit(1)
 
+
 try:
-    while True:
-        time.sleep(20)  # Wait until nodeInfo messages are sent
-        graph.update()
-        text = "Hi there, how are you doing?"
-        nodes[0].iface.sendText(text)
-        # Add any additional messaging here
-        time.sleep(300)
+    time.sleep(15)  # Wait until nodeInfo messages are sent
+    text = "Hi there, how are you doing?"
+    nodes[0].iface.sendText(text)
+    time.sleep(10)
+    # Add any additional messaging here
+    closeNodes()
 except KeyboardInterrupt:
-    print("\nClosing all nodes...")
-    for n in nodes:
-        n.iface.close()
-    os.system("killall "+pathToProgram+"program")
-    sys.exit(1)
+    closeNodes()
 
-
+while True: 
+    mId = input('Message to plot: ')
+    graph.update(int(mId))
