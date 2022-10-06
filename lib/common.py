@@ -1,9 +1,10 @@
+from matplotlib import patches
 from . import config as conf
 from . import phy 
 import matplotlib
 import matplotlib.pyplot as plt
 matplotlib.use("TkAgg")
-from matplotlib.widgets import Button
+from matplotlib.widgets import Button, TextBox
 import os
 import simpy
 import pandas as pd
@@ -111,7 +112,7 @@ def findRandomPosition(nodes):
 				if dist < conf.MINDIST:
 					foundMin = False
 					break
-				pathLoss = phy.estimatePathLoss(dist, conf.REGION["freq_start"])
+				pathLoss = phy.estimatePathLoss(dist, conf.FREQ)
 				rssi = conf.PTX + conf.GL - pathLoss
 				if rssi >= conf.SENSMODEM[conf.MODEM]:
 					foundMax = True
@@ -244,6 +245,7 @@ class Graph():
 		self.packets = []
 		self.arrows = []
 		self.txts = []
+		self.annots = []
 		# plt.ion()
 		self.fig, self.ax = plt.subplots()
 		plt.suptitle('Placement of {} nodes'.format(
@@ -263,49 +265,75 @@ class Graph():
 	def addNode(self, node):
 		# place the node
 		if not conf.RANDOM:
-			self.ax.annotate(str(node.nodeid), (node.x, node.y))
+			self.ax.annotate(str(node.nodeid), (node.x-5, node.y+5))
 		self.ax.plot(node.x, node.y, marker="o", markersize = 2.5, color = "grey")
 		self.fig.canvas.draw_idle()
 		# self.fig.canvas.flush_events()
 		plt.pause(0.001)
 
 
+	def initRoutes(self):
+		self.fig.subplots_adjust(bottom=0.2)
+		axbox = self.fig.add_axes([0.5, 0.04, 0.1, 0.06])
+		self.text_box = TextBox(axbox, "Message ID: ", initial="0")
+		self.text_box.on_submit(self.submit)
+		self.fig.canvas.mpl_connect("motion_notify_event", self.hover)
+		print("Enter a message ID on the plot to show its route.")
+		self.fig.canvas.draw()
+		plt.show()
+
+
 	def clearRoute(self):
-		for arr in self.arrows.copy():
+		for i,arr in enumerate(self.arrows.copy()):
 				arr.remove()
 				self.arrows.remove(arr)
+				self.annots[i].set_visible(False)
 		for txt in self.txts.copy():
 			txt.remove()
 			self.txts.remove(txt)
 
 
-	def update(self, messageId):
+	def plotRoute(self, messageId):
 		packets = [p for p in self.packets if p.localId == messageId]
 		if len(packets) > 0:
 			self.clearRoute()
+			style = "Simple, tail_width=0.5, head_width=4, head_length=8"
 			for p in packets:
 				tx = p.transmitter
 				rxs = p.receivers
 				for rx in rxs:
-					self.arrows.append(self.ax.arrow(tx.x, tx.y, rx.x-tx.x, rx.y-tx.y, length_includes_head=True,
-					 	head_width=20, head_length=40, fc=plt.cm.Set1(tx.nodeid), ec=plt.cm.Set1(tx.nodeid)))
-					#self.txts.append(self.ax.text(tx.x+(tx.x-rx.x)/2, tx.y+(tx.y-rx.y)/2, "HL="+str(p.packet["hopLimit"])))
-			self.fig.suptitle('Route of message '+str(messageId))
-			self.fig.canvas.draw()
-			self.fig.canvas.flush_events()
+					kw = dict(arrowstyle=style, color=plt.cm.Set1(tx.nodeid))
+					patch = patches.FancyArrowPatch((tx.x, tx.y), (rx.x, rx.y), connectionstyle="arc3,rad=.5", **kw)
+					self.ax.add_patch(patch)
+			self.arrows.append(patch)
+			annot = self.ax.annotate("HL"+str(p.packet["hopLimit"]), xy=(tx.x, tx.y))
+			self.annots.append(annot)
+			annot.set_visible(False)
+			self.fig.canvas.draw() 
+			self.fig.suptitle('Route of message '+str(messageId)+' and ACKs')
 		else:
 			print('Could not find message ID.')
 
 
-	# def submit(self, expression):
-	# 	messageId = int(eval(expression))
-	# 	self.update(messageId)
-	# 	plt.draw()
+	def hover(self, event):
+		if event.inaxes == self.ax:
+			for i,a in enumerate(self.arrows):
+				annot = self.annots[i]
+				vis = annot.get_visible()
+				cont, _ = a.contains(event)
+				if cont:
+						annot.set_visible(True)
+						self.fig.canvas.draw_idle()
+				else:
+					if vis:
+							print('set visible false')
+							annot.set_visible(False)
+							self.fig.canvas.draw()
 
-	# def addTextBox(self):
-	# 	axbox = self.fig.add_axes([0.1, 0.05, 0.8, 0.075])
-	# 	text_box = TextBox(axbox, "Show route of message: ")
-	# 	text_box.on_submit(self.submit)
+
+	def submit(self, val):
+		messageId = int(val)
+		self.plotRoute(messageId)
 
 
 	def save(self):

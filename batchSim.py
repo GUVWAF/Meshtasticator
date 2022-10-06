@@ -51,7 +51,7 @@ class MeshNode():
 						if dist < conf.MINDIST:
 							foundMin = False
 							break
-						pathLoss = estimatePathLoss(dist, conf.REGION["freq_start"])
+						pathLoss = estimatePathLoss(dist, conf.FREQ)
 						rssi = conf.PTX + conf.GL - pathLoss
 						if rssi >= conf.SENSMODEM[conf.MODEM]:
 							foundMax = True

@@ -35,7 +35,7 @@ class MeshNode():
 		self.airUtilization = 0
 
 		if x == -1 and y == -1: 
-			x,y = findRandomPosition(nodes)
+			self.x, self.y = findRandomPosition(nodes)
 
 		env.process(self.generateMessage())
 		env.process(self.receive(self.bc_pipe.get_output_conn()))

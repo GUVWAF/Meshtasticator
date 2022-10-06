@@ -1,6 +1,6 @@
 import numpy as np
 
-MODEM = 5
+MODEM = 4
 MODEL = 5
 NR_NODES = 10
 PERIOD = 100000  # mean period of generating a new message with exponential distribution in ms
@@ -9,8 +9,8 @@ SIMTIME = 200000  # duration of one simulation in ms
 INTERFERENCE_LEVEL = 0.05  # chance that at a given moment there is already a LoRa packet being sent on your channel, 
                            # outside of the Meshtastic traffic. Given in a ratio from 0 to 1.  
 COLLISION_DUE_TO_INTERFERENCE = False
-XSIZE = 1000  # horizontal size of the area to simulate in m 
-YSIZE = 1000  # vertical size of the area to simulate in m
+XSIZE = 2000  # horizontal size of the area to simulate in m 
+YSIZE = 2000  # vertical size of the area to simulate in m
 MINDIST = 10  # minimum distance between each node in the area in m
 NOISE_LEVEL = -119.25  # some noise level in dB, based on SNR_MIN and minimum receiver sensitivity
 OX = 0.0  # origin x-coordinate
@@ -37,8 +37,9 @@ regions = { "US": {"freq_start": 902e6, "freq_end": 928e6, "power_limit": 30},
             "EU433": {"freq_start": 433e6, "freq_end": 434e6, "power_limit": 12}, 
             "EU868": {"freq_start": 868e6, "freq_end": 868e6, "power_limit": 16}}
 
-REGION = regions["EU868"]
+REGION = regions["US"]
 PTX = REGION["power_limit"]
+CHANNEL_NUM = 27
 
 # from RadioInterface::applyModemConfig() 
 BWMODEM = np.array([250e3, 250e3, 250e3, 250e3, 250e3, 125e3, 31.25e3])  # bandwidth
@@ -48,3 +49,5 @@ CRMODEM = np.array([8, 8, 8, 8, 8, 8, 8]) # coding rate
 SENSMODEM = np.array([-124.25, -126.75, -128.25, -130.25, -132.75, -133.25, -139.25])
 # minimum received power for CAD (estimated based on SX126x datasheet)
 CADMODEM = np.array([-125, -128, -133, -134, -139, -139, -144])
+
+FREQ = REGION["freq_start"]+BWMODEM[MODEM]*CHANNEL_NUM

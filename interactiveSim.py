@@ -7,6 +7,7 @@ import sys
 import os
 import time
 from lib.common import *
+from lib.phy import estimatePathLoss
 import select
 from pubsub import pub
 import meshtastic.tcp_interface
@@ -39,7 +40,7 @@ class realPacket():
         self.receivers = receivers
 
 
-def forwardPacket(iface, packet): 
+def forwardPacket(iface, packet, rssi, snr): 
     data = packet["decoded"]["payload"]
     if getattr(data, "SerializeToString", None):
         data = data.SerializeToString()
@@ -63,8 +64,8 @@ def forwardPacket(iface, packet):
         meshPacket.decoded.want_response = packet["want_response"]
     else:
         meshPacket.decoded.want_response = False
-    meshPacket.rx_rssi = 10  # TODO calculate based on positions
-    meshPacket.rx_snr = -10  # TODO calculate based on positions
+    meshPacket.rx_rssi = int(rssi) 
+    meshPacket.rx_snr = int(snr)  
     toRadio = mesh_pb2.ToRadio()
     toRadio.packet.CopyFrom(meshPacket)
     iface._sendToRadio(toRadio)
@@ -84,10 +85,27 @@ def onReceive(interface, packet):
     # TODO forward only to those nodes that are in range 
     transmitter = next((n for n in nodes if n.TCPPort == interface.portNumber), None)
     receivers = [n for n in nodes if n.nodeid != transmitter.nodeid]
-    rP.setTxRxs(transmitter, receivers)
-    for r in receivers:
-        forwardPacket(r.iface, packet)
+    rxs, rssis, snrs = calcReceivers(transmitter, receivers)
+    rP.setTxRxs(transmitter, rxs)
+    for i,r in enumerate(rxs):
+        forwardPacket(r.iface, packet, rssis[i], snrs[i])
     graph.packets.append(rP)
+
+
+def calcReceivers(tx, receivers): 
+    rxs = []
+    rssis = []
+    snrs = []
+    for rx in receivers:
+        dist_2d = calcDist(tx.x, tx.y, rx.x, rx.y) 
+        pathLoss = estimatePathLoss(dist_2d, conf.FREQ)
+        RSSI = conf.PTX + conf.GL - pathLoss
+        SNR = RSSI-conf.NOISE_LEVEL
+        if RSSI >= conf.SENSMODEM[conf.MODEM]:
+            rxs.append(rx)
+            rssis.append(RSSI)
+            snrs.append(SNR)
+    return rxs, rssis, snrs
 
 
 def closeNodes():
@@ -148,14 +166,12 @@ except(Exception) as ex:
 
 try:
     time.sleep(15)  # Wait until nodeInfo messages are sent
-    text = "Hi there, how are you doing?"
-    nodes[0].iface.sendText(text)
-    time.sleep(10)
+    #text = "Hi there, how are you doing?"
+    #nodes[0].iface.sendText(text)
+    #time.sleep(20)
     # Add any additional messaging here
     closeNodes()
 except KeyboardInterrupt:
     closeNodes()
 
-while True: 
-    mId = input('Message ID to plot: ')
-    graph.update(int(mId))
+graph.initRoutes()
