@@ -1,4 +1,5 @@
 import numpy as np
+from lib.common import calcDist
 from . import config as conf
 from .phy import *
 import random
@@ -24,12 +25,11 @@ class MeshPacket():
 		self.sf = conf.SFMODEM[conf.MODEM]
 		self.cr = conf.CRMODEM[conf.MODEM]
 		self.bw = conf.BWMODEM[conf.MODEM]
-		self.freq = conf.REGION["freq_start"]
-
+		self.freq = conf.FREQ
 		for rx_node in nodes:
 			if rx_node.nodeid == self.txNodeId:
 				continue
-			dist_2d = np.sqrt((x-rx_node.x)*(x-rx_node.x)+(y-rx_node.y)*(y-rx_node.y))
+			dist_2d = calcDist(x, y, rx_node.x, rx_node.y) # np.sqrt((x-rx_node.x)*(x-rx_node.x)+(y-rx_node.y)*(y-rx_node.y))
 			self.LplAtN[rx_node.nodeid] = estimatePathLoss(dist_2d, self.freq)
 			self.rssiAtN[rx_node.nodeid] = self.txpow + conf.GL - self.LplAtN[rx_node.nodeid]
 			if self.rssiAtN[rx_node.nodeid] >= conf.SENSMODEM[conf.MODEM]:
