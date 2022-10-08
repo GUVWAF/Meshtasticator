@@ -206,7 +206,7 @@ except(Exception) as ex:
 
 
 try:
-    time.sleep(15*conf.NR_NODES)  # Wait until nodeInfo messages are sent
+    time.sleep(40)  # Wait until nodeInfo messages are sent
     text = "Hi there, how are you doing?"
 
     # Broadcast Message from node 0
