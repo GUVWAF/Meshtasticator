@@ -9,8 +9,8 @@ SIMTIME = 200000  # duration of one simulation in ms
 INTERFERENCE_LEVEL = 0.05  # chance that at a given moment there is already a LoRa packet being sent on your channel, 
                            # outside of the Meshtastic traffic. Given in a ratio from 0 to 1.  
 COLLISION_DUE_TO_INTERFERENCE = False
-XSIZE = 2000  # horizontal size of the area to simulate in m 
-YSIZE = 2000  # vertical size of the area to simulate in m
+XSIZE = 3000  # horizontal size of the area to simulate in m 
+YSIZE = 3000  # vertical size of the area to simulate in m
 MINDIST = 10  # minimum distance between each node in the area in m
 NOISE_LEVEL = -119.25  # some noise level in dB, based on SNR_MIN and minimum receiver sensitivity
 OX = 0.0  # origin x-coordinate
