@@ -207,17 +207,17 @@ except(Exception) as ex:
 
 
 try:
-    time.sleep(10*conf.NR_NODES)  # Wait until nodeInfo messages are sent
+    time.sleep(15*conf.NR_NODES)  # Wait until nodeInfo messages are sent
     text = "Hi there, how are you doing?"
 
     # Broadcast Message from node 0
-    # fromNode = 0
-    # sendBroadcast(text, fromNode)
+    fromNode = 0
+    sendBroadcast(text, fromNode)
 
     # Direct Message from node 1 to node 0
-    fromNode = 1
-    toNode = 0
-    sendDM(text, fromNode, toNode)
+    # fromNode = 1
+    # toNode = 0
+    # sendDM(text, fromNode, toNode)
 
     time.sleep(15)
     closeNodes()

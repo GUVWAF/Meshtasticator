@@ -223,7 +223,7 @@ class BroadcastPipe(object):
 		if not self.pipes:
 			raise RuntimeError('There are no output pipes.')
 		events = [store.put(packet) for store in self.pipes]
-		return self.env.all_of(events)  # Condition event for all "events"
+		return self.env.all_of(events) 
 
 
 	def put(self, packet):
@@ -232,7 +232,7 @@ class BroadcastPipe(object):
 		if not self.pipes:
 			raise RuntimeError('There are no output pipes.')
 		events = [store.put(packet) for store in self.pipes]
-		return self.env.all_of(events)  # Condition event for all "events"
+		return self.env.all_of(events)
        
 
 	def get_output_conn(self):
@@ -246,7 +246,6 @@ class Graph():
 		self.xmax = conf.XSIZE/2 +1
 		self.ymax = conf.YSIZE/2 +1
 		self.packets = []
-		# plt.ion()
 		self.fig, self.ax = plt.subplots()
 		plt.suptitle('Placement of {} nodes'.format(
 				conf.NR_NODES))
@@ -279,7 +278,6 @@ class Graph():
 		self.text_box.on_submit(self.submit)
 		self.fig.canvas.mpl_connect("motion_notify_event", self.hover)
 		self.fig.canvas.mpl_connect("button_press_event", self.onClick)
-		#self.fig.canvas.mpl_connect("pick_event", self.onPick)
 		print("Enter a message ID on the plot to show its route.")
 		self.fig.canvas.draw_idle()
 		plt.show()
@@ -372,7 +370,6 @@ class Graph():
 				annot = self.annots[i]
 				cont, _ = a.contains(event)
 				if cont:
-						self.setVisibleTime = time.time()
 						annot.set_visible(True)
 						self.fig.canvas.draw()
 						break
