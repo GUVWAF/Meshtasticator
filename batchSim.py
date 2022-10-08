@@ -37,36 +37,7 @@ class MeshNode():
 		self.airUtilization = 0
 
 		if x == -1 and y == -1: 
-			foundMin = True
-			foundMax = False
-			tries = 0
-			while not (foundMin and foundMax):
-				a = random.random()
-				b = random.random()
-				posx = a*conf.XSIZE+conf.OX-conf.XSIZE/2
-				posy = b*conf.YSIZE+conf.OY-conf.YSIZE/2
-				if len(nodes) > 0:
-					for n in nodes:
-						dist = np.sqrt(((abs(n.x-posx))**2)+((abs(n.y-posy))**2))
-						if dist < conf.MINDIST:
-							foundMin = False
-							break
-						pathLoss = estimatePathLoss(dist, conf.FREQ)
-						rssi = conf.PTX + conf.GL - pathLoss
-						if rssi >= conf.SENSMODEM[conf.MODEM]:
-							foundMax = True
-					if foundMin and foundMax:
-						self.x = posx
-						self.y = posy
-				else:
-					self.x = posx
-					self.y = posy
-					foundMin = True
-					foundMax = True
-				tries += 1
-				if tries > 1000:
-					print('Could not find a location to place the node. Try increasing XSIZE/YSIZE or decreasing MINDIST.')
-					break
+			self.x, self.y = findRandomPosition(nodes)
 
 		env.process(self.generateMessage())
 		env.process(self.receive(self.bc_pipe.get_output_conn()))
@@ -299,7 +270,8 @@ for p, nrNodes in enumerate(parameters):
 			"NR_NODES": conf.NR_NODES,
 			"INTERFERENCE_LEVEL": conf.INTERFERENCE_LEVEL,
 			"COLLISION_DUE_TO_INTERFERENCE": conf.COLLISION_DUE_TO_INTERFERENCE,
-			"RAY": conf.RAY, 
+			"XSIZE": conf.XSIZE, 
+			"YSIZE": conf.YSIZE,
 			"MINDIST": conf.MINDIST,
 			"SIMTIME": conf.SIMTIME,
 			"PERIOD": conf.PERIOD,
