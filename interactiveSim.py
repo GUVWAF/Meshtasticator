@@ -7,7 +7,6 @@ import sys
 import os
 import time
 
-from sympy import nroots
 from lib.common import *
 from lib.phy import estimatePathLoss
 from pubsub import pub
