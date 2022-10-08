@@ -294,7 +294,7 @@ class Graph():
 
 	def plotRoute(self, messageId):
 		if self.firstTime: 
-			print('Hover over an arc to show some info and then click to remove it.')
+			print('Hover over an arc to show some info and click to remove it afterwards.')
 		self.firstTime = False
 		packets = [p for p in self.packets if p.localId == messageId]
 		if len(packets) > 0:
