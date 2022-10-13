@@ -262,7 +262,7 @@ class Graph():
 			self.ax.annotate(str(node.nodeid), (node.x-5, node.y+5))
 		self.ax.plot(node.x, node.y, marker="o", markersize = 2.5, color = "grey")
 		self.fig.canvas.draw_idle()
-		plt.pause(0.001)
+		plt.pause(0.05)
 
 
 	def initRoutes(self, defaultHopLimit):
