@@ -8,6 +8,7 @@ import lib.config as conf
 from lib.common import *
 from lib.packet import *
 from lib.mac import *
+from lib.discrete_event import *
 
 VERBOSE = False
 SAVE = True

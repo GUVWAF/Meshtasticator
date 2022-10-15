@@ -5,6 +5,7 @@ import lib.config as conf
 from lib.common import *
 from lib.mac import *
 from lib.packet import * 
+from lib.discrete_event import *
 
 VERBOSE = True
 random.seed(conf.SEED)

@@ -1,20 +1,15 @@
-from meshtastic import BROADCAST_NUM
-from matplotlib import patches
+
 from . import config as conf
 from . import phy 
 import matplotlib
 import matplotlib.pyplot as plt
 matplotlib.use("TkAgg")
-from matplotlib.widgets import Button, TextBox
+from matplotlib.widgets import Button
 import os
-import simpy
-import pandas as pd
-import time
 import numpy as np
 import random
-HW_ID_OFFSET = 16
-TCP_PORT_OFFSET = 4403
 	
+
 def getParams(args):
 	if len(args) > 3:
 		print("Usage: ./loraMesh [nr_nodes] [--from-file <file_name>]")
@@ -45,7 +40,7 @@ def setBatch(simNr):
 	conf.VERBOSE = False
 
 
-def genScenario():
+def genScenario(plotRange = True):
 	save = True  # set to True if you want to save the coordinates of the nodes 
 	filename = "coords"
 	nodeX = []
@@ -69,6 +64,11 @@ def genScenario():
 		ax.set_xlim(-(conf.XSIZE/2+1)+conf.OX, conf.OX+conf.XSIZE/2+1)
 		ax.set_ylim(-(conf.YSIZE/2+1)+conf.OY, conf.OY+conf.YSIZE/2+1)
 		ax.set_title("Double click to place nodes. Press continue to start the simulation.")
+		if plotRange:
+			for i,(nx,ny) in enumerate(zip(nodeX, nodeY)):
+				ax.annotate(str(i), (nx-5, ny+5))
+				circle = plt.Circle((nx, ny), radius=phy.MAXRANGE, color=plt.cm.Set1(i), alpha=0.1)
+				ax.add_patch(circle)
 		ax.scatter(nodeX, nodeY)
 		fig.canvas.draw_idle()
 
@@ -198,51 +198,9 @@ def move_figure(fig, x, y):
   fig.canvas.manager.window.wm_geometry("+%d+%d" % (x, y))
 
 
-def simReport(data, subdir, param):	
-	fname = "simReport_{}_{}.csv".format(conf.MODEM, param)
-	if not os.path.isdir(os.path.join("out", "report", subdir)):
-		if not os.path.isdir("out"):
-			os.mkdir("out")
-		if not os.path.isdir(os.path.join("out", "report")):
-			os.mkdir(os.path.join("out", "report"))
-		os.mkdir(os.path.join("out", "report", subdir))
-	df_new = pd.DataFrame(data)
-	df_new.to_csv(os.path.join("out", "report", subdir, fname), index=False)		
-		
-
-class BroadcastPipe(object):
-	def __init__(self, env, capacity=simpy.core.Infinity):
-		self.env = env
-		self.capacity = capacity
-		self.pipes = []
-
-
-	def latency(self, packet):
-		# wait time that packet is on the air
-		yield self.env.timeout(packet.timeOnAir)
-		if not self.pipes:
-			raise RuntimeError('There are no output pipes.')
-		events = [store.put(packet) for store in self.pipes]
-		return self.env.all_of(events) 
-
-
-	def put(self, packet):
-		self.env.process(self.latency(packet))
-		# this mimics start of reception
-		if not self.pipes:
-			raise RuntimeError('There are no output pipes.')
-		events = [store.put(packet) for store in self.pipes]
-		return self.env.all_of(events)
-       
-
-	def get_output_conn(self):
-		pipe = simpy.Store(self.env, capacity=self.capacity)
-		self.pipes.append(pipe)
-		return pipe
-
-
 class Graph():
-	def __init__(self):
+	def __init__(self, plotRange=False):
+		self.plotRange = plotRange
 		self.xmax = conf.XSIZE/2 +1
 		self.ymax = conf.YSIZE/2 +1
 		self.packets = []
@@ -261,130 +219,11 @@ class Graph():
 		if not conf.RANDOM:
 			self.ax.annotate(str(node.nodeid), (node.x-5, node.y+5))
 		self.ax.plot(node.x, node.y, marker="o", markersize = 2.5, color = "grey")
+		if self.plotRange:
+			circle = plt.Circle((node.x, node.y), radius=phy.MAXRANGE, color=plt.cm.Set1(node.nodeid), alpha=0.1)
+			self.ax.add_patch(circle)
 		self.fig.canvas.draw_idle()
-		plt.pause(0.001)
-
-
-	def initRoutes(self, defaultHopLimit):
-		self.arrows = []
-		self.txts = []
-		self.annots = []
-		self.firstTime = True
-		self.defaultHopLimit = defaultHopLimit
-		self.fig.subplots_adjust(bottom=0.2)
-		axbox = self.fig.add_axes([0.5, 0.04, 0.1, 0.06])
-		self.text_box = TextBox(axbox, "Message ID: ", initial="0")
-		self.text_box.disconnect("button_press_event")
-		self.text_box.on_submit(self.submit)
-		self.fig.canvas.mpl_connect("motion_notify_event", self.hover)
-		self.fig.canvas.mpl_connect("button_press_event", self.onClick)
-		print("Enter a message ID on the plot to show its route.")
-		self.fig.canvas.draw_idle()
-		plt.show()
-
-
-	def clearRoute(self):
-		for arr in self.arrows.copy():
-			arr.remove()
-			self.arrows.remove(arr)
-		for ann in self.annots.copy():
-			ann.remove()
-			self.annots.remove(ann)
-
-
-	def plotRoute(self, messageId):
-		if self.firstTime: 
-			print('Hover over an arc to show some info and click to remove it afterwards.')
-		self.firstTime = False
-		packets = [p for p in self.packets if p.localId == messageId]
-		if len(packets) > 0:
-			self.clearRoute()
-			style = "Simple, tail_width=0.5, head_width=4, head_length=8"
-			for p in packets:
-				tx = p.transmitter
-				rxs = p.receivers
-				for i,rx in enumerate(rxs):
-					kw = dict(arrowstyle=style, color=plt.cm.Set1(tx.nodeid))
-					patch = patches.FancyArrowPatch((tx.x, tx.y), (rx.x, rx.y), connectionstyle="arc3,rad=.1", **kw)
-					self.ax.add_patch(patch)
-
-					if int(p.packet["to"]) == BROADCAST_NUM:
-						to = "All"
-					else: 
-						to = str(p.packet["to"]-HW_ID_OFFSET)
-
-					if "hopLimit" in p.packet:
-						hopLimit = p.packet["hopLimit"]
-					else:
-						hopLimit = None
-
-					if hopLimit == self.defaultHopLimit:
-						msgType = "Original\/message"
-					elif p.packet["priority"] != "ACK":
-						if int(p.packet['from'])-HW_ID_OFFSET == rx.nodeid:
-							msgType = "Implicit\/ACK"
-						else:
-							if to == "All":
-								msgType = "Rebroadcast"
-							else:
-								msgType = "Forwarding\/packet"
-					elif p.packet["priority"] == "ACK":
-						msgType = "ACK"
-					else: 
-						msgType = "Other"
-
-					fields = []
-					msgTypeField = r"$\bf{"+msgType+"}$"
-					fields.append(msgTypeField)
-					origSenderField = "Original sender: "+str(p.packet["from"]-HW_ID_OFFSET)
-					fields.append(origSenderField)
-					destField = "Destination: "+to
-					fields.append(destField)
-					portNumField = "Portnum: "+str(p.packet["decoded"]["simulator"]["portnum"])
-					fields.append(portNumField)
-					if hopLimit:
-						hopLimitField = "HopLimit: "+str(hopLimit)
-						fields.append(hopLimitField)
-					rssiField = "RSSI: "+str(round(p.rssis[i], 2)) +" dBm"
-					fields.append(rssiField)
-					table = ""
-					for i,f in enumerate(fields): 
-						table += f
-						if i != len(fields)-1:
-							table += "\n"
-					annot = self.ax.annotate(table, xy=((tx.x+rx.x)/2, rx.y+150), bbox=dict(boxstyle="round", fc="w"))
-					annot.get_bbox_patch().set_facecolor(patch.get_facecolor())
-					annot.get_bbox_patch().set_alpha(0.4)
-					annot.set_visible(False)
-					self.arrows.append(patch)
-					self.annots.append(annot)
-			self.fig.canvas.draw_idle() 
-			self.fig.suptitle('Route of message '+str(messageId)+' and ACKs')
-		else:
-			print('Could not find message ID.')
-
-
-	def hover(self, event):
-		if event.inaxes == self.ax:
-			for i,a in enumerate(self.arrows):
-				annot = self.annots[i]
-				cont, _ = a.contains(event)
-				if cont:
-						annot.set_visible(True)
-						self.fig.canvas.draw()
-						break
-
-
-	def onClick(self, event):
-		for annot in self.annots:
-			if annot.get_visible():
-				annot.set_visible(False)
-				self.fig.canvas.draw_idle()
-
-
-	def submit(self, val):
-		messageId = int(val)
-		self.plotRoute(messageId)
+		plt.pause(0.1)
 
 
 	def save(self):

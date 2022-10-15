@@ -1,6 +1,7 @@
 import random
 from . import config as conf
 import math
+from scipy.optimize import fsolve
 
 VERBOSE = False
 random.seed(conf.SEED)
@@ -155,33 +156,14 @@ def estimatePathLoss(dist, freq):
         Lpl = (44.9-6.55*math.log10(conf.HM))*(math.log10(dist) - math.log10(1000)) \
         + 45.5 + (35.46-1.1*conf.HM)*(math.log10(freq)-math.log10(1000000)) \
         - 13.82*math.log10(conf.HM)+0.7*conf.HM+C
-    
-    # Polynomial 3rd degree
-    elif conf.MODEL == 7:
-        p1 = -5.491e-06
-        p2 = 0.002936
-        p3 = -0.5004
-        p4 = -70.57
-        
-        Lpl = p1*math.pow(dist, 3) + p2*math.pow(dist, 2) \
-        + p3*dist + p4
-    
-    # Polynomial 6th degree
-    elif conf.MODEL == 8:
-        p1 = 3.69e-12
-        p2 = 5.997e-11 
-        p3 = -1.381e-06 
-        p4 = 0.0005134 
-        p5 = -0.07318 
-        p6 = 4.254 
-        p7 = -171  
-    
-        Lpl = p1*math.pow(dist, 6) + p2*math.pow(dist, 5) \
-        + p3*math.pow(dist, 4) + p4*math.pow(dist, 3) \
-        + p5*math.pow(dist, 2) + p6*dist + p7
         
     return Lpl
 
+def zeroLinkBudget(dist):
+    return conf.PTX + conf.GL - estimatePathLoss(dist, conf.FREQ) - conf.SENSMODEM[conf.MODEM]
+
+
+MAXRANGE = fsolve(zeroLinkBudget, 1500)
 
 if VERBOSE:
 	def verboseprint(*args, **kwargs): 
