@@ -20,12 +20,12 @@ try:
     # Direct Message from node 1 to node 0
     # fromNode = 1
     # toNode = 0
-    # sendDM(text, fromNode, toNode)
+    # sim.sendDM(text, fromNode, toNode)
 
     # Ping node 1 from node 0
     # fromNode = 0
     # toNode = 1
-    # sendPing(fromNode, toNode)
+    # sim.sendPing(fromNode, toNode)
 
     time.sleep(15) # Wait until message are sent
     sim.closeNodes()
