@@ -2,8 +2,8 @@
 from . import config as conf
 from . import phy 
 import matplotlib
-import matplotlib.pyplot as plt
 matplotlib.use("TkAgg")
+import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
 import os
 import numpy as np
