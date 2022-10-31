@@ -11,23 +11,31 @@ sim = interactiveSim() # Start the simulator
 
 try:
     time.sleep(40)  # Wait until nodeInfo messages are sent
-    text = "Hi there, how are you doing?"
+    sim.showNodes()  # Show nodeDB as seen by each node
 
-    # Broadcast Message from node 0
+    """ Broadcast Message from node 0 """
     fromNode = 0
-    sim.sendBroadcast(text, fromNode)
+    sim.sendBroadcast("Hi all", fromNode)
 
-    # Direct Message from node 1 to node 0
+    """ Direct Message from node 1 to node 0 """
     # fromNode = 1
     # toNode = 0
-    # sim.sendDM(text, fromNode, toNode)
+    # sim.sendDM("Hi node 0", fromNode, toNode)
 
-    # Ping node 1 from node 0
+    """ Ping node 1 from node 0 """
     # fromNode = 0
     # toNode = 1
     # sim.sendPing(fromNode, toNode)
 
-    time.sleep(15) # Wait until message are sent
+    """ Admin Message (setOwner) from node 0 to node 1 
+        (First add shared admin channel.) """
+    # for n in sim.nodes:
+    #     n.addAdminChannel()     
+    # fromNode = 0
+    # toNode = 2
+    # sim.sendFromTo(fromNode, toNode).setOwner(long_name="Test")  # can be any function in Node class
+
+    time.sleep(30) # Wait until message are sent
     sim.closeNodes()
 except KeyboardInterrupt:
     sim.closeNodes()

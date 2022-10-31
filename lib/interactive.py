@@ -1,5 +1,5 @@
 from meshtastic import tcp_interface, BROADCAST_NUM, mesh_pb2, \
-	admin_pb2, telemetry_pb2, remote_hardware_pb2, portnums_pb2
+	admin_pb2, telemetry_pb2, remote_hardware_pb2, portnums_pb2, channel_pb2
 from pubsub import pub
 from matplotlib import patches
 from matplotlib.widgets import TextBox
@@ -21,8 +21,21 @@ class interactiveNode():
     if self.x == -1 and self.y == -1:
       self.x, self.y = findRandomPosition(nodes)
 
+
   def addInterface(self, iface):
     self.iface = iface
+
+
+  def addAdminChannel(self):
+    ch = self.iface.localNode.getChannelByChannelIndex(1)
+    chs = channel_pb2.ChannelSettings()
+    chs.psk = b'\xb0X\xad\xb3\xa5\xd0?$\x8c\x92{\xcd^(\xeb\xb7\x01\x84"\xc9\xf4\x06:\x8d\xfdD#\x08\xe5\xc2\xd7\xdc'
+    chs.name = "admin"
+    ch.settings.CopyFrom(chs)
+    ch.role = channel_pb2.Channel.Role.SECONDARY
+    self.iface.localNode.channels[ch.index] = ch
+    self.iface.localNode.writeChannel(ch.index)
+    time.sleep(1)
 
 
 class interactivePacket():
@@ -79,12 +92,27 @@ class interactiveGraph(Graph):
     if len(packets) > 0:
       self.clearRoute()
       style = "Simple, tail_width=0.5, head_width=4, head_length=8"
+      pairs = dict.fromkeys(list(set(p.transmitter for p in packets)), []) 
       for p in packets:
         tx = p.transmitter
         rxs = p.receivers
-        for i,rx in enumerate(rxs):
+        rxCnt = 1
+        for ri, rx in enumerate(rxs):
+          # calculate how many packets with the same Tx and Rx we have
+          found = False
+          for pi, rxPair in enumerate(pairs.get(tx)): # pair is rx.nodeid and its count for this transmitter
+            if rxPair[0] == rx.nodeid:
+              found = True
+              rxCnt = rxPair[1] + 1
+              updated = pairs.get(tx).copy()
+              updated[pi] = (rx.nodeid, rxCnt)
+              pairs.update({tx: updated}) 
+          if not found:
+              rxCnt = 1
+              pairs.get(tx).append((rx.nodeid, rxCnt))
           kw = dict(arrowstyle=style, color=plt.cm.Set1(tx.nodeid))
-          patch = patches.FancyArrowPatch((tx.x, tx.y), (rx.x, rx.y), connectionstyle="arc3,rad=.1", **kw)
+          rad = str(rxCnt*0.1) # set the rad to Tx-Rx pair count
+          patch = patches.FancyArrowPatch((tx.x, tx.y), (rx.x, rx.y), connectionstyle="arc3,rad="+rad, **kw)
           self.ax.add_patch(patch)
 
           if int(p.packet["to"]) == BROADCAST_NUM:
@@ -124,7 +152,7 @@ class interactiveGraph(Graph):
           if hopLimit:
             hopLimitField = "HopLimit: "+str(hopLimit)
             fields.append(hopLimitField)
-          rssiField = "RSSI: "+str(round(p.rssis[i], 2)) +" dBm"
+          rssiField = "RSSI: "+str(round(p.rssis[ri], 2)) +" dBm"
           fields.append(rssiField)
           table = ""
           for i,f in enumerate(fields): 
@@ -266,11 +294,19 @@ class interactiveSim():
       meshPacket.decoded.request_id = packet["decoded"]["requestId"]
     if "wantResponse" in packet["decoded"]:
       meshPacket.decoded.want_response = packet["decoded"]["wantResponse"]
+    if "channel" in packet:
+      meshPacket.channel = int(packet["channel"])
     meshPacket.rx_rssi = int(rssi) 
     meshPacket.rx_snr = int(snr)  
     toRadio = mesh_pb2.ToRadio()
     toRadio.packet.CopyFrom(meshPacket)
     iface._sendToRadio(toRadio)
+
+
+  def showNodes(self):
+    for n in self.nodes:
+      print('NodeDB as seen by node', n.nodeid)
+      n.iface.showNodes()
 
 
   def sendBroadcast(self, text, fromNode):
@@ -285,6 +321,19 @@ class interactiveSim():
     payload = str.encode("test string")
     self.nodes[fromNode].iface.sendData(payload, self.nodes[toNode].hwId, portNum=portnums_pb2.PortNum.REPLY_APP,
       wantAck=True, wantResponse=True)
+
+
+  def getNodeById(self, id):
+    return self.nodes[id].iface.localNode
+
+  
+  def nodeIdToDest(self, id):
+    val = hex(id+HW_ID_OFFSET).strip('0x')
+    return '!'+'0'*(8-len(val))+val
+
+
+  def sendFromTo(self, fromNode, toNode):
+    return self.nodes[fromNode].iface.getNode(self.nodeIdToDest(toNode))  
 
 
   def onReceive(self, interface, packet): 
