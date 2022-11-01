@@ -10,7 +10,7 @@ from lib.interactive import *
 sim = interactiveSim() # Start the simulator
 
 try:
-    time.sleep(40)  # Wait until nodeInfo messages are sent
+    time.sleep(45)  # Wait until nodeInfo messages are sent
     sim.showNodes()  # Show nodeDB as seen by each node
 
     """ Broadcast Message from node 0 """
@@ -35,7 +35,7 @@ try:
     # toNode = 2
     # sim.sendFromTo(fromNode, toNode).setOwner(long_name="Test")  # can be any function in Node class
 
-    time.sleep(30) # Wait until message are sent
+    time.sleep(15) # Wait until message are sent
     sim.closeNodes()
 except KeyboardInterrupt:
     sim.closeNodes()

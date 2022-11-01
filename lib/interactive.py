@@ -125,8 +125,11 @@ class interactiveGraph(Graph):
           else:
             hopLimit = None
 
-          if p.packet["from"] == tx.hwId and hopLimit == self.defaultHopLimit and not "requestId" in p.packet["decoded"]:
-            msgType = "Original\/message"
+          if p.packet["from"] == tx.hwId and hopLimit == self.defaultHopLimit:
+            if "requestId" in p.packet["decoded"]:
+              msgType = "Response"
+            else:
+              msgType = "Original\/message"
           elif p.packet["priority"] != "ACK":
             if int(p.packet['from'])-HW_ID_OFFSET == rx.nodeid:
               msgType = "Implicit\/ACK"
