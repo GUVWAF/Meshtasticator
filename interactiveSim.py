@@ -32,7 +32,7 @@ try:
     # for n in sim.nodes:
     #     n.addAdminChannel()     
     # fromNode = 0
-    # toNode = 2
+    # toNode = 1
     # sim.sendFromTo(fromNode, toNode).setOwner(long_name="Test")  # can be any function in Node class
 
     time.sleep(15) # Wait until message are sent
