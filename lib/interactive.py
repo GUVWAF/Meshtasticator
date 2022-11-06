@@ -72,6 +72,7 @@ class interactiveGraph(Graph):
     self.fig.canvas.mpl_connect("button_press_event", self.onClick)
     print("Enter a message ID on the plot to show its route.")
     self.fig.canvas.draw_idle()
+    self.fig.canvas.get_tk_widget().focus_set()
     plt.show()
 
 
@@ -248,14 +249,20 @@ class interactiveSim():
       self.graph.addNode(node)
 
     for n in self.nodes:
-      newTerminal = "gnome-terminal --title='Node "+str(n.nodeid)+"' -- "
+      if os.name == 'nt':   # Windows
+        newTerminal = "wt --title Node"+str(n.nodeid)+" "
+      else: 
+        newTerminal = "gnome-terminal --title='Node "+str(n.nodeid)+"' -- "
       if self.docker:
         cmdString = newTerminal+"docker run --rm -p "+str(n.TCPPort)+":"+str(n.TCPPort)+" meshtastic-device ./meshtasticd_linux_amd64 -e -h "+str(n.hwId)+" -p "+str(n.TCPPort)
       else: 
         cmdString = newTerminal+pathToProgram+"program -e -d "+os.path.expanduser('~')+"/.portduino/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)
       os.system(cmdString) 
 
-    time.sleep(4)  # Allow instances to start up their TCP service 
+    if self.docker:
+      time.sleep(8)  # Wait until the containers are started up
+    else: 
+      time.sleep(4)  # Allow instances to start up their TCP service 
     try:
       for n in self.nodes:
         iface = tcp_interface.TCPInterface(hostname="localhost", portNumber=n.TCPPort)
