@@ -125,11 +125,17 @@ class interactiveGraph(Graph):
           else:
             hopLimit = None
 
-          if p.packet["from"] == tx.hwId and hopLimit == self.defaultHopLimit:
-            if "requestId" in p.packet["decoded"]:
-              msgType = "Response"
-            else:
-              msgType = "Original\/message"
+          if p.packet["from"] == tx.hwId:
+            if hopLimit == self.defaultHopLimit:
+              if "requestId" in p.packet["decoded"]:
+                msgType = "Response"
+              else:
+                msgType = "Original\/message"
+            else: 
+              if "requestId" in p.packet["decoded"]:
+                msgType = "Retransmitted\/response"
+              else:
+                msgType = "Retransmitted\/original\/message"
           elif p.packet["priority"] != "ACK":
             if int(p.packet['from'])-HW_ID_OFFSET == rx.nodeid:
               msgType = "Implicit\/ACK"
@@ -202,10 +208,13 @@ class interactiveSim():
     self.messages = []
     self.messageId = -1
     self.nodes = []
+    self.docker = False
     foundNodes = False
     foundPath = False
     for i in range(1, len(sys.argv)):
-      if not "--p" in sys.argv[i] and not "/" in sys.argv[i]:
+      if "--d" in sys.argv[i]:
+        self.docker = True
+      elif not "--p" in sys.argv[i] and not "/" in sys.argv[i]:
         if int(sys.argv[i]) > 10:
           print("Not sure if you want to start more than 10 terminals. Exiting.")
           exit(1)
@@ -213,7 +222,6 @@ class interactiveSim():
         xs = []
         ys = []
         foundNodes = True
-        break
     if not foundNodes: 
       [xs, ys] = genScenario()
       conf.NR_NODES = len(xs)
@@ -226,7 +234,7 @@ class interactiveSim():
         string = sys.argv[2]
         pathToProgram = string
         foundPath = True
-    if not foundPath:
+    if not foundPath and not self.docker:
       pathToProgram = os.getcwd()+"/"
 
 
@@ -240,7 +248,11 @@ class interactiveSim():
       self.graph.addNode(node)
 
     for n in self.nodes:
-      cmdString = "gnome-terminal --title='Node "+str(n.nodeid)+"' -- "+pathToProgram+"program -e -d "+os.path.expanduser('~')+"/.portduino/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)
+      newTerminal = "gnome-terminal --title='Node "+str(n.nodeid)+"' -- "
+      if self.docker:
+        cmdString = newTerminal+"docker run --rm -p "+str(n.TCPPort)+":"+str(n.TCPPort)+" meshtastic-device ./meshtasticd_linux_amd64 -e -h "+str(n.hwId)+" -p "+str(n.TCPPort)
+      else: 
+        cmdString = newTerminal+pathToProgram+"program -e -d "+os.path.expanduser('~')+"/.portduino/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)
       os.system(cmdString) 
 
     time.sleep(4)  # Allow instances to start up their TCP service 
@@ -251,9 +263,7 @@ class interactiveSim():
       pub.subscribe(self.onReceive, "meshtastic.receive.simulator")
     except(Exception) as ex:
       print(f"Error: Could not connect to native program: {ex}")
-      for n in self.nodes:
-        n.iface.close()
-      os.system("killall "+pathToProgram+"program")
+      self.closeNodes()
       sys.exit(1)
 
 

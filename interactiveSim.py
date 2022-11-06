@@ -30,7 +30,7 @@ try:
     """ Admin Message (setOwner) from node 0 to node 1 
         (First add shared admin channel.) """
     # for n in sim.nodes:
-    #     n.addAdminChannel()     
+    #     n.addAdminChannel()  # or sim.getNodeById(n.nodeid).setURL('<YOUR_URL>')  
     # fromNode = 0
     # toNode = 1
     # sim.sendFromTo(fromNode, toNode).setOwner(long_name="Test")  # can be any function in Node class
