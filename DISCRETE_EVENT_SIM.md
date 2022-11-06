@@ -29,7 +29,7 @@ To simulate different parameters, you will have to change the *batchSim.py* scri
 You can change some of the configurations to model your scenario in */lib/config.py*. The most important settings are listed below. 
 
 ### Modem
-The LoRa modem ([see Meshtastic channel settings](https://meshtastic.org/docs/about/overview/radio-settings#pre-defined)) that is used, as defined below:
+The LoRa modem ([see Meshtastic radio settings](https://meshtastic.org/docs/about/overview/radio-settings#pre-defined)) that is used, as defined below:
 |Modem  | Name | Bandwidth (kHz) | Coding rate | Spreading Factor | Data rate (bps)
 |--|--|--|--|--|--| 
 | 0 |Short Fast|250|4/8|7|3865
