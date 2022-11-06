@@ -13,7 +13,7 @@ where *nrNodes* is the number of instances you want to launch. Note that for eac
 
 Before running this, build the Linux native application of Meshtastic-device which can be done on your Linux PC using [PlatformIO](https://meshtastic.org/docs/development/firmware/build) or using [Docker](https://meshtastic.org/docs/software/linux-native#usage-with-docker). 
 - Using PlatformIO, select 'native' and click on 'build'. Locate the generated binary file, which will probably be in *Meshtastic-device/.pio/build/native/*. Either copy the file called 'program' to the directory where you will be running the Python script from, or add the full path as argument after *--p*. For example: ```python3 interactiveSim.py 3 --p /home/User/Meshtastic-device/.pio/build/native/```.
-- For usage with Docker, first build the container using ```build -t meshtastic-device .``` when in the *Meshtastic-device* directory. Then run the interactive simulator with *--d* as argument, e.g.: ```python3 interactiveSim.py 3 --d```.
+- For usage with Docker, first build the container using ```docker build -t meshtastic-device .``` when in the *Meshtastic-device* directory. Then run the interactive simulator with *--d* as argument, e.g.: ```python3 interactiveSim.py 3 --d```.
 
 The nodes first exchange their NodeInfo. Afterwards, you can let them send messages. To specifiy what you want to send, modify the script in the 'try' clause. 
 Once the nodes are done sending, you can close them by pressing Control+c or just wait for the timeout. Then you will see a plot where you can enter a message ID to plot its route. Hover over an arc to see some information and click to remove the information afterwards. Hovering is sometimes a bit laggy, so you might have to hover over it multiple times.
