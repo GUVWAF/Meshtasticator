@@ -1,5 +1,5 @@
 # Discrete-event simulator 
-The discrete-event simulator mimics the radio section of the device software. It is currently based on [Meshtastic-device commit 63c8f15](https://github.com/meshtastic/Meshtastic-device/commit/63c8f15d387b724bdcfb33d277d401e81ba6a73e), i.e. what will become Meshtastic 2.0. 
+The discrete-event simulator mimics the radio section of the device software. It is currently based on Meshtastic 2.0. 
 
 ## Usage
 Please `git clone` or download this repository, navigate to the Meshtasticator folder (optionally create a virtual environment) and install the necessary requirements using: 
@@ -29,7 +29,7 @@ To simulate different parameters, you will have to change the *batchSim.py* scri
 You can change some of the configurations to model your scenario in */lib/config.py*. The most important settings are listed below. 
 
 ### Modem
-The LoRa modem ([see Meshtastic channel settings](https://meshtastic.org/docs/settings#channel-settings)) that is used, as defined below:
+The LoRa modem ([see Meshtastic channel settings](https://meshtastic.org/docs/about/overview/radio-settings#pre-defined)) that is used, as defined below:
 |Modem  | Name | Bandwidth (kHz) | Coding rate | Spreading Factor | Data rate (bps)
 |--|--|--|--|--|--| 
 | 0 |Short Fast|250|4/8|7|3865
@@ -59,7 +59,7 @@ This feature is referred to the path loss model, i.e. what the simulator uses to
 ## Explanation
 A discrete-event simulator jumps from event to event over time, where an event is a change in the state of the system. It is therefore well-suited for simulating communication networks.
 
-For every node in the simulation, an instance is created that mimics the [Meshtastic logic](https://meshtastic.org/docs/developers/firmware/mesh-alg#current-algorithm). Each node runs three processes in parallel: *generateMessage*, *transmit* and *receive*. The first creates an event by constructing a new message with unique sequence number at a random time, taken from an exponential distribution. For now, each generated message is of the same payload size. The second and third processes model the actual transmitting and receiving behavior, respectively. 
+For every node in the simulation, an instance is created that mimics the [Meshtastic logic](https://meshtastic.org/docs/about/overview/mesh-alg). Each node runs three processes in parallel: *generateMessage*, *transmit* and *receive*. The first creates an event by constructing a new message with unique sequence number at a random time, taken from an exponential distribution. For now, each generated message is of the same payload size. The second and third processes model the actual transmitting and receiving behavior, respectively. 
 
 The model of the LoRa physical (PHY) layer is in */lib/phy.py*. Depending on the modem used, it is calculated what the airtime of a packet is. The PHY layer uses a configurable pathloss model to estimate whether nodes at a specific distance can sense each other's packets. Furthermore, it determines whether two packets collide, which depends on the frequency, spreading factor, received time and received power of the two packets.  
 
