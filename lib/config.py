@@ -27,7 +27,7 @@ COLLISION_DUE_TO_INTERFERENCE = False
 # from RadioInterface.cpp RegionInfo regions[]
 regions = { "US": {"freq_start": 902e6, "freq_end": 928e6, "power_limit": 30},
             "EU433": {"freq_start": 433e6, "freq_end": 434e6, "power_limit": 12}, 
-            "EU868": {"freq_start": 868e6, "freq_end": 868e6, "power_limit": 16}}
+            "EU868": {"freq_start": 868e6, "freq_end": 868e6, "power_limit": 27}}
 REGION = regions["US"] # Select a different region here
 CHANNEL_NUM = 27  # Channel number 
 ### End of discrete-event specific ###
