@@ -12,7 +12,7 @@ random.seed(conf.SEED)
 
 
 class MeshNode():
-	def __init__(self, nodes, env, bc_pipe, nodeid, period, messages, packetsAtN, packets, delays, x=-1, y=-1):
+	def __init__(self, nodes, env, bc_pipe, nodeid, period, messages, packetsAtN, packets, delays, x=None, y=None):
 		self.nodeid = nodeid
 		self.x = x
 		self.y = y
@@ -21,7 +21,7 @@ class MeshNode():
 		self.period = period
 		self.bc_pipe = bc_pipe
 		self.rx_snr = 0
-		self.isRouter = False
+		self.isRouter = conf.router
 		self.nodes = nodes
 		self.messages = messages
 		self.packetsAtN = packetsAtN
@@ -35,7 +35,7 @@ class MeshNode():
 		self.txAirUtilization = 0
 		self.airUtilization = 0
 
-		if x == -1 and y == -1: 
+		if x == None and y == None: 
 			self.x, self.y = findRandomPosition(nodes)
 
 		env.process(self.generateMessage())
