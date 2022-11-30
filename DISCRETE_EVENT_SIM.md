@@ -5,23 +5,22 @@ The discrete-event simulator mimics the radio section of the device software. It
 Please `git clone` or download this repository, navigate to the Meshtasticator folder (optionally create a virtual environment) and install the necessary requirements using: 
 ```pip install -r requirements.txt```. On a Mac, you might need python-tk as well (```brew install python-tk```).
 
-Then run:
+To start one simulation with the default configurations, run:
 
-```python3 loraMesh.py [nr_nodes] [--from-file <file_name>]``` 
-
-This starts one simulation with the default configurations. 
+```python3 loraMesh.py [nr_nodes]``` 
 
 If no argument is given, you first have to place the nodes on a plot. 
 If the number of nodes is given, it will randomly place nodes in the area. It makes sure that each node can reach at least one other node. Furthermore, all nodes are placed at a configurable minimum distance (MINDIST) from each other. 
-If you use the argument --from-file <file_name>, it reads the location of nodes from a file in */out/coords*. Do not specify the number of nodes in this case.
+
+If you place the nodes yourself, after a simulation the number of nodes and their coordinates are automatically saved and you can rerun the scenario with:
+
+ ```python3 loraMesh.py --from-file coords```
 
 For running multiple repetitions of simulations for a set of parameters, e.g. the number of nodes, run: 
 
 ```python3 batchSim.py``` 
 
-After the simulations are done, it plots relevant metrics obtained from the simulations. It saves these metrics in */out/report/* to analyze them later on. 
-
-See *plotExample.py* for an example Python script to plot the results.  
+After the simulations are done, it plots relevant metrics obtained from the simulations. It saves these metrics in */out/report/* to analyze them later on. See *plotExample.py* for an example Python script to plot the results.  
 
 To simulate different parameters, you will have to change the *batchSim.py* script yourself. 
 
@@ -47,7 +46,7 @@ Mean period (in ms) with which the nodes generate a new message following an exp
 Payload size of each generated message in bytes. For a position packet, it will be around 40 bytes. 
 
 ### Model
-This feature is referred to the path loss model, i.e. what the simulator uses to calculate how well a signal will propagate. The implemented pathloss models are:
+This feature is referred to the path loss model, i.e. what the simulator uses to calculate how well a signal will propagate. Note that this is only a rough estimation of the physical environment and will not be 100% accurate, as it depends on a lot of factors. The implemented pathloss models are:
 * ```0``` set the log-distance model  
 * ```1``` set the Okumura-Hata for small and medium-size cities model  
 * ```2``` set the Okumura-Hata for metropolitan areas  

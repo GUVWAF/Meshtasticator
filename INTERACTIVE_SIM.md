@@ -22,7 +22,7 @@ Once the nodes are done sending, you can close them by pressing Control+c or jus
 ![](/img/route_plot2.png)
 
 ## Pathloss model
-The simulator uses a pathloss model to calculate how well a signal will propagate. The implemented pathloss models are:
+The simulator uses a pathloss model to calculate how well a signal will propagate. Note that this is only a rough estimation of the physical environment and will not be 100% accurate, as it depends on a lot of factors. The implemented pathloss models are:
 * ```0``` set the log-distance model  
 * ```1``` set the Okumura-Hata for small and medium-size cities model  
 * ```2``` set the Okumura-Hata for metropolitan areas  
