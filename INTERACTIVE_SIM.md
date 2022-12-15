@@ -17,7 +17,8 @@ Then the interactive simulator can be run as follows:
 where *nrNodes* (optional) is the number of instances you want to launch. Note that for each instance a terminal and TCP port (starting at 4403) is opened. If the number of nodes is given, they will be randomly placed, otherwise you first have to place the nodes on a plot.
 
 The nodes first exchange their NodeInfo. Afterwards, you can let them send messages. To specifiy what you want to send, modify the script in the 'try' clause. 
-Once the nodes are done sending, you can close them by pressing Control+c or just wait for the timeout. Then you will see a plot where you can enter a message ID to plot its route. Hover over an arc to see some information and click to remove the information afterwards. Hovering is sometimes a bit laggy, so you might have to hover over it multiple times.
+Depending on the number of nodes, exchanging the NodeInfo might take quite some time. You can also disable these by removing setIntervalFromNow() in the NodeInfoModule (and PositionModule) in the device firmware. This works because the simulator already knows the NodeIDs. 
+Once the nodes are done sending, you can close them by pressing Control+c or just wait for the timeout set at the end of the 'try' clause. Then you will see a plot where you can enter a message ID to plot its route. Hover over an arc to see some information and click to remove the information afterwards. Hovering is sometimes a bit laggy, so you might have to hover over it multiple times.
 
 ![](/img/route_plot2.png)
 
