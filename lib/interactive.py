@@ -12,13 +12,13 @@ TCP_PORT_OFFSET = 4403
 
 
 class interactiveNode(): 
-  def __init__(self, nodes, nodeId, hwId, TCPPort, x=-1, y=-1):
+  def __init__(self, nodes, nodeId, hwId, TCPPort, x=None, y=None):
     self.nodeid = nodeId
     self.x = x
     self.y = y
     self.hwId = hwId
     self.TCPPort = TCPPort 
-    if self.x == -1 and self.y == -1:
+    if self.x == None and self.y == None:
       self.x, self.y = findRandomPosition(nodes)
 
 
