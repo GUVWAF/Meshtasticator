@@ -170,8 +170,11 @@ class MeshNode():
 					if sentPacket.txNodeId == self.nodeid and sentPacket.seq == p.seq:
 						ackReceived = True
 						sentPacket.ackReceived = True
-				
-				# FloodingRouter: rebroadcasting received message 
+
+				if not ackReceived and p. :
+					pass
+
+        # FloodingRouter: rebroadcasting received message 
 				if not ackReceived and p.hopLimit > 0:
 					pNew = MeshPacket(self.nodes, p.origTxNodeId, self.nodeid, self.x, self.y, conf.PACKETLENGTH, p.seq, p.genTime) 
 					pNew.hopLimit = p.hopLimit-1

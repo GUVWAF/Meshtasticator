@@ -4,11 +4,13 @@ from . import config as conf
 from .phy import *
 import random
 
+NODENUM_BROADCAST = 0xFFFFFFFF
 random.seed(conf.SEED)
 
 class MeshPacket(): 
-	def __init__(self, nodes, origTxNodeId, txNodeId, x, y, plen, seq, genTime):
+	def __init__(self, nodes, origTxNodeId, destId=NODENUM_BROADCAST, txNodeId, x, y, plen, seq, genTime):
 		self.origTxNodeId = origTxNodeId
+    self.destId = destId
 		self.txNodeId = txNodeId
 		self.seq = seq
 		self.genTime = genTime
