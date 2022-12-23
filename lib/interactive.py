@@ -55,29 +55,34 @@ class interactivePacket():
 class interactiveGraph(Graph):
   def __init__(self):
     super().__init__()
+    self.routes = False
 
 
   def initRoutes(self, sim):
     if not sim.docker:
       sim.closeNodes()
-    self.sim = sim
-    self.arrows = []
-    self.txts = []
-    self.annots = []
-    self.firstTime = True
-    self.defaultHopLimit = conf.hopLimit
-    self.fig.subplots_adjust(bottom=0.2)
-    axbox = self.fig.add_axes([0.5, 0.04, 0.1, 0.06])
-    self.text_box = TextBox(axbox, "Message ID: ", initial="0")
-    self.text_box.disconnect("button_press_event")
-    self.text_box.on_submit(self.submit)
-    self.fig.canvas.mpl_connect("motion_notify_event", self.hover)
-    self.fig.canvas.mpl_connect("button_press_event", self.onClick)
-    self.fig.canvas.mpl_connect("close_event", self.onClose)
-    print("Enter a message ID on the plot to show its route.")
-    self.fig.canvas.draw_idle()
-    self.fig.canvas.get_tk_widget().focus_set()
-    plt.show()
+    if not self.routes: 
+      self.routes = True
+      self.sim = sim
+      self.arrows = []
+      self.txts = []
+      self.annots = []
+      self.firstTime = True
+      self.defaultHopLimit = conf.hopLimit
+      self.fig.subplots_adjust(bottom=0.2)
+      axbox = self.fig.add_axes([0.5, 0.04, 0.1, 0.06])
+      self.text_box = TextBox(axbox, "Message ID: ", initial="0")
+      self.text_box.disconnect("button_press_event")
+      self.text_box.on_submit(self.submit)
+      self.fig.canvas.mpl_connect("motion_notify_event", self.hover)
+      self.fig.canvas.mpl_connect("button_press_event", self.onClick)
+      self.fig.canvas.mpl_connect("close_event", self.onClose)
+      print("Enter a message ID on the plot to show its route.")
+      self.fig.canvas.draw_idle()
+      self.fig.canvas.get_tk_widget().focus_set()
+      plt.show()
+    elif sim.docker:
+      sim.closeNodes()
 
 
   def clearRoute(self):
@@ -261,11 +266,12 @@ class interactiveSim():
       n0 = self.nodes[0]
       dockerClient = docker.from_env()
       self.container = dockerClient.containers.run("meshtastic-device", \
-        "./meshtasticd_linux_amd64 -e -d /home/node"+str(n0.nodeid)+" -h "+str(n0.hwId)+" -p "+str(n0.TCPPort), \
+        "sh -c \"./meshtasticd_linux_amd64 -e -d /home/node"+str(n0.nodeid)+" -h "+str(n0.hwId)+" -p "+str(n0.TCPPort)+" > /home/out"+str(n0.nodeid)+".log\"", \
         ports=dict(zip((str(n.TCPPort)+'/tcp' for n in self.nodes), (n.TCPPort for n in self.nodes))), detach=True, auto_remove=True)
       for n in self.nodes[1:]:
-        self.container.exec_run("./meshtasticd_linux_amd64 -e -d /home/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort), detach=True) 
-      print("Docker container is started. You can check the logs in the Desktop application.")
+        self.container.exec_run("sh -c \"./meshtasticd_linux_amd64 -e -d /home/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)+" > /home/out"+str(n.nodeid)+".log\"", detach=True) 
+      print("Docker container with name "+str(self.container.name)+" is started.")
+      print("You can check the device logs using 'docker exec -it "+str(self.container.name) +" cat /home/outx.log', where x is the node number.")
     else: 
       for n in self.nodes:
         newTerminal = "gnome-terminal --title='Node "+str(n.nodeid)+"' -- "
@@ -415,12 +421,4 @@ class interactiveSim():
     for n in self.nodes:
       n.iface.localNode.exitSimulator()
     if self.docker:
-      # dkg = self.container.logs(stream=True, follow=False)
-      # with open('out/logs.txt', 'a') as logFile:
-      #   try: 
-      #     while True:
-      #       line = next(dkg).decode("utf-8")
-      #       logFile.write(line)
-      #   except: 
-      #     pass
       self.container.stop()
