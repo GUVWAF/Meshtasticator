@@ -57,7 +57,10 @@ class interactiveGraph(Graph):
     super().__init__()
 
 
-  def initRoutes(self):
+  def initRoutes(self, sim):
+    if not sim.docker:
+      sim.closeNodes()
+    self.sim = sim
     self.arrows = []
     self.txts = []
     self.annots = []
@@ -70,6 +73,7 @@ class interactiveGraph(Graph):
     self.text_box.on_submit(self.submit)
     self.fig.canvas.mpl_connect("motion_notify_event", self.hover)
     self.fig.canvas.mpl_connect("button_press_event", self.onClick)
+    self.fig.canvas.mpl_connect("close_event", self.onClose)
     print("Enter a message ID on the plot to show its route.")
     self.fig.canvas.draw_idle()
     self.fig.canvas.get_tk_widget().focus_set()
@@ -191,13 +195,14 @@ class interactiveGraph(Graph):
           self.fig.canvas.draw()
           break
 
-
   def onClick(self, event):
     for annot in self.annots:
       if annot.get_visible():
         annot.set_visible(False)
         self.fig.canvas.draw_idle()
 
+  def onClose(self, event):
+    self.sim.closeNodes()
 
   def submit(self, val):
     messageId = int(val)
@@ -209,7 +214,11 @@ class interactiveSim():
     self.messages = []
     self.messageId = -1
     self.nodes = []
-    self.docker = False
+    if not sys.platform.startswith('linux'):
+      print("Docker is required for non-Linux OS.")
+      self.docker = True
+    else:
+      self.docker = False
     foundNodes = False
     foundPath = False
     for i in range(1, len(sys.argv)):
@@ -238,7 +247,6 @@ class interactiveSim():
     if not foundPath and not self.docker:
       pathToProgram = os.getcwd()+"/"
 
-
     self.graph = interactiveGraph()
     for n in range(conf.NR_NODES):
       if len(xs) == 0: 
@@ -248,21 +256,23 @@ class interactiveSim():
       self.nodes.append(node)
       self.graph.addNode(node)
 
-    for n in self.nodes:
-      if os.name == 'nt':   # Windows
-        newTerminal = "wt --title Node"+str(n.nodeid)+" "
-      else: 
-        newTerminal = "gnome-terminal --title='Node "+str(n.nodeid)+"' -- "
-      if self.docker:
-        cmdString = newTerminal+"docker run --rm -p "+str(n.TCPPort)+":"+str(n.TCPPort)+" meshtastic-device ./meshtasticd_linux_amd64 -e -h "+str(n.hwId)+" -p "+str(n.TCPPort)
-      else: 
-        cmdString = newTerminal+pathToProgram+"program -e -d "+os.path.expanduser('~')+"/.portduino/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)
-      os.system(cmdString) 
-
     if self.docker:
-      time.sleep(8)  # Wait until the containers are started up
+      import docker
+      n0 = self.nodes[0]
+      dockerClient = docker.from_env()
+      self.container = dockerClient.containers.run("meshtastic-device", \
+        "./meshtasticd_linux_amd64 -e -d /home/node"+str(n0.nodeid)+" -h "+str(n0.hwId)+" -p "+str(n0.TCPPort), \
+        ports=dict(zip((str(n.TCPPort)+'/tcp' for n in self.nodes), (n.TCPPort for n in self.nodes))), detach=True, auto_remove=True)
+      for n in self.nodes[1:]:
+        self.container.exec_run("./meshtasticd_linux_amd64 -e -d /home/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort), detach=True) 
+      print("Docker container is started. You can check the logs in the Desktop application.")
     else: 
-      time.sleep(4)  # Allow instances to start up their TCP service 
+      for n in self.nodes:
+        newTerminal = "gnome-terminal --title='Node "+str(n.nodeid)+"' -- "
+        cmdString = newTerminal+pathToProgram+"program -e -d "+os.path.expanduser('~')+"/.portduino/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)
+        os.system(cmdString) 
+
+    time.sleep(4)  # Allow instances to start up their TCP service 
     try:
       for n in self.nodes:
         iface = tcp_interface.TCPInterface(hostname="localhost", portNumber=n.TCPPort)
@@ -404,3 +414,13 @@ class interactiveSim():
     pub.unsubAll()
     for n in self.nodes:
       n.iface.localNode.exitSimulator()
+    if self.docker:
+      # dkg = self.container.logs(stream=True, follow=False)
+      # with open('out/logs.txt', 'a') as logFile:
+      #   try: 
+      #     while True:
+      #       line = next(dkg).decode("utf-8")
+      #       logFile.write(line)
+      #   except: 
+      #     pass
+      self.container.stop()

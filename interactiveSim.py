@@ -36,8 +36,6 @@ try:
     # sim.sendFromTo(fromNode, toNode).setOwner(long_name="Test")  # can be any function in Node class
 
     time.sleep(15) # Wait until message are sent
-    sim.closeNodes()
+    sim.graph.initRoutes(sim)  # Visualize the route of messages sent 
 except KeyboardInterrupt:
-    sim.closeNodes()
-
-sim.graph.initRoutes()  # Visualize the route of messages sent 
+    sim.graph.initRoutes(sim)
