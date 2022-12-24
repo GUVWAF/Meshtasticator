@@ -219,11 +219,6 @@ class interactiveSim():
     self.messages = []
     self.messageId = -1
     self.nodes = []
-    if not sys.platform.startswith('linux'):
-      print("Docker is required for non-Linux OS.")
-      self.docker = True
-    else:
-      self.docker = False
     foundNodes = False
     foundPath = False
     for i in range(1, len(sys.argv)):
@@ -251,6 +246,9 @@ class interactiveSim():
         foundPath = True
     if not foundPath and not self.docker:
       pathToProgram = os.getcwd()+"/"
+    if not self.docker and not sys.platform.startswith('linux'):
+      print("Docker is required for non-Linux OS.")
+      self.docker = True
 
     self.graph = interactiveGraph()
     for n in range(conf.NR_NODES):
