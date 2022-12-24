@@ -265,13 +265,21 @@ class interactiveSim():
       import docker
       n0 = self.nodes[0]
       dockerClient = docker.from_env()
-      self.container = dockerClient.containers.run("meshtastic-device", \
-        "sh -c \"./meshtasticd_linux_amd64 -e -d /home/node"+str(n0.nodeid)+" -h "+str(n0.hwId)+" -p "+str(n0.TCPPort)+" > /home/out"+str(n0.nodeid)+".log\"", \
-        ports=dict(zip((str(n.TCPPort)+'/tcp' for n in self.nodes), (n.TCPPort for n in self.nodes))), detach=True, auto_remove=True)
-      for n in self.nodes[1:]:
-        self.container.exec_run("sh -c \"./meshtasticd_linux_amd64 -e -d /home/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)+" > /home/out"+str(n.nodeid)+".log\"", detach=True) 
-      print("Docker container with name "+str(self.container.name)+" is started.")
-      print("You can check the device logs using 'docker exec -it "+str(self.container.name) +" cat /home/outx.log', where x is the node number.")
+      if sys.platform == "darwin":
+        self.container = dockerClient.containers.run("meshtastic-device", \
+          "./meshtasticd_linux_amd64 -e -d /home/node"+str(n0.nodeid)+" -h "+str(n0.hwId)+" -p "+str(n0.TCPPort), \
+          ports=dict(zip((str(n.TCPPort)+'/tcp' for n in self.nodes), (n.TCPPort for n in self.nodes))), detach=True, auto_remove=True)
+        for n in self.nodes[1:]:
+          self.container.exec_run("./meshtasticd_linux_amd64 -e -d /home/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort), detach=True) 
+        print("Docker container with name "+str(self.container.name)+" is started.")
+      else: 
+        self.container = dockerClient.containers.run("meshtastic-device", \
+          "sh -c './meshtasticd_linux_amd64 -e -d /home/node"+str(n0.nodeid)+" -h "+str(n0.hwId)+" -p "+str(n0.TCPPort)+" > /home/out_"+str(n0.nodeid)+".log'", \
+          ports=dict(zip((str(n.TCPPort)+'/tcp' for n in self.nodes), (n.TCPPort for n in self.nodes))), detach=True, auto_remove=True)
+        for n in self.nodes[1:]:
+          self.container.exec_run("sh -c './meshtasticd_linux_amd64 -e -d /home/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)+" > /home/out_"+str(n.nodeid)+".log'", detach=True) 
+        print("Docker container with name "+str(self.container.name)+" is started.")
+        print("You can check the device logs using 'docker exec -it "+str(self.container.name) +" cat /home/out_x.log', where x is the node number.")
     else: 
       for n in self.nodes:
         newTerminal = "gnome-terminal --title='Node "+str(n.nodeid)+"' -- "

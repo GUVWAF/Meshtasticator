@@ -19,7 +19,7 @@ However, it comes at the cost of usefulness, i.e., the amount of received packet
 ![](/img/usefulness_hops.png)
 
 ## Interactive simulator
-The interactive simulator uses the [Linux native application of Meshtastic](https://meshtastic.org/docs/software/linux-native), i.e. the real device software, while simulating some of the hardware interfaces, including the LoRa chip. 
+The interactive simulator uses the [Linux native application of Meshtastic](https://meshtastic.org/docs/software/linux-native), i.e. the real device software, while simulating some of the hardware interfaces, including the LoRa chip. Can also be used on a Windows or macOS host with Docker.
 
 See [this document](INTERACTIVE_SIM.md) for a usage guide. 
 
