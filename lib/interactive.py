@@ -221,6 +221,7 @@ class interactiveSim():
     self.nodes = []
     foundNodes = False
     foundPath = False
+    self.docker = False
     for i in range(1, len(sys.argv)):
       if "--d" in sys.argv[i]:
         self.docker = True
