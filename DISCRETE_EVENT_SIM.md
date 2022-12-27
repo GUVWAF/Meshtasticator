@@ -55,6 +55,9 @@ This feature is referred to the path loss model, i.e. what the simulator uses to
 * ```5``` set the 3GPP for suburban macro-cell  
 * ```6``` set the 3GPP for metropolitan macro-cell  
 
+### Broadcasts or direct messages (DMs)
+By default, *DMs* is set to False, meaning it will send broadcast messages only. If you set it to True, each node will only send DMs to a random other node in the network.
+
 ## Explanation
 A discrete-event simulator jumps from event to event over time, where an event is a change in the state of the system. It is therefore well-suited for simulating communication networks.
 
