@@ -16,6 +16,7 @@ class MeshNode():
 		self.nodeid = nodeid
 		self.x = x
 		self.y = y
+		self.z = conf.HM
 		self.messageSeq = messageSeq
 		self.env = env
 		self.period = period
@@ -35,7 +36,7 @@ class MeshNode():
 		self.txAirUtilization = 0
 		self.airUtilization = 0
 
-		if x == None and y == None: 
+		if x is None and y is None: 
 			self.x, self.y = findRandomPosition(nodes)
 
 		env.process(self.generateMessage())
@@ -46,18 +47,27 @@ class MeshNode():
 	def generateMessage(self):
 		global messageSeq
 		while True:	
+			# if self.nodeid == 0:
 			nextGen = random.expovariate(1.0/float(self.period))
+			# else:
+				# nextGen = NODENUM_BROADCAST
 			# do not generate message near the end of the simulation (otherwise flooding cannot finish in time)
 			if self.env.now+nextGen+conf.hopLimit*airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], conf.PACKETLENGTH, conf.BWMODEM[conf.MODEM]) < conf.SIMTIME:
 				yield self.env.timeout(nextGen) 
 
+				if conf.DMs:
+					destId = random.choice([i for i in range(0, len(nodes)) if i is not self.nodeid])
+					# if self.nodeid == 0:
+					# 	destId = 2
+				else:
+					destId = NODENUM_BROADCAST
 				messageSeq += 1
-				self.messages.append(MeshMessage(self.nodeid, self.env.now, messageSeq))
-				p = MeshPacket(self.nodes, self.nodeid, self.nodeid, self.x, self.y, conf.PACKETLENGTH, messageSeq, self.env.now)  
-				verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'generated message', p.seq)
+				self.messages.append(MeshMessage(self.nodeid, destId, self.env.now, messageSeq))
+				p = MeshPacket(self.nodes, self.nodeid, destId, self.nodeid, self.x, self.y, conf.PACKETLENGTH, messageSeq, self.env.now, True, False, None)  
+				verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'generated message', p.seq, 'to', destId)
 				self.packets.append(p)
 				self.env.process(self.transmit(p))
-				while True: # ReliableRouter: retransmit message if no ACK received after timeout 
+				while p.wantAck: # ReliableRouter: retransmit message if no ACK received after timeout 
 					retransmissionMsec = getRetransmissionMsec(self, p) 
 					yield self.env.timeout(retransmissionMsec)
 
@@ -74,9 +84,9 @@ class MeshNode():
 						break
 					else: 
 						if minRetransmissions > 0:  # generate new packet with same sequence number
-							pNew = MeshPacket(self.nodes, self.nodeid, self.nodeid, self.x, self.y, conf.PACKETLENGTH, p.seq, p.genTime)  
+							pNew = MeshPacket(self.nodes, self.nodeid, p.destId, self.nodeid, self.x, self.y, conf.PACKETLENGTH, p.seq, p.genTime, p.wantAck, False, None)  
 							pNew.retransmissions = minRetransmissions-1
-							verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'wants to retransmit its generated packet', p.seq, 'minRetransmissions', minRetransmissions)
+							verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'wants to retransmit its generated packet to', destId, 'with seq.nr.', p.seq, 'minRetransmissions', minRetransmissions)
 							self.packets.append(pNew)							
 							self.env.process(self.transmit(pNew))
 						else:
@@ -126,6 +136,7 @@ class MeshNode():
 
 
 	def receive(self, in_pipe):
+		global messageSeq
 		while True:
 			p = yield in_pipe.get()
 			if p.sensedByN[self.nodeid] and not p.collidedAtN[self.nodeid] and p.onAirToN[self.nodeid]:  # start of reception
@@ -158,25 +169,42 @@ class MeshNode():
 				if p.hopLimit < self.leastReceivedHopLimit[p.seq]:  # hop limit of received packet is lower than previously received one
 					self.leastReceivedHopLimit[p.seq] = p.hopLimit	
 
-				# check if ACK for own generated message
-				if p.origTxNodeId == self.nodeid: 
-					# verboseprint("Node", self.nodeid, 'received ACK on generated message.')
+				# check if implicit ACK for own generated message
+				if p.origTxNodeId == self.nodeid:
+					if p.isAck:
+						verboseprint('Node', self.nodeid, 'received real ACK on generated message.')
+					else:
+						verboseprint('Node', self.nodeid, 'received implicit ACK on message sent.')
 					p.ackReceived = True
 					continue
 				
-				# check if ACK for message you currently have in queue
-				ackReceived = False		
+				ackReceived = False	
+				realAckReceived = False
 				for sentPacket in self.packets:
+					# check if ACK for message you currently have in queue
 					if sentPacket.txNodeId == self.nodeid and sentPacket.seq == p.seq:
+						verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'received implicit ACK for message in queue.')
 						ackReceived = True
 						sentPacket.ackReceived = True
+					# check if real ACK for message sent
+					if sentPacket.origTxNodeId == self.nodeid and p.isAck and sentPacket.seq == p.requestId:
+						verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'received real ACK.')
+						realAckReceived = True
+						sentPacket.ackReceived = True
 
-				if not ackReceived and p. :
-					pass
-
+				# send real ACK if you are the destination and you did not yet send the ACK
+				if p.wantAck and p.destId == self.nodeid and not any(pA.requestId == p.seq for pA in self.packets):
+					verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'sends a flooding ACK.')
+					messageSeq += 1
+					self.messages.append(MeshMessage(self.nodeid, p.origTxNodeId, self.env.now, messageSeq))
+					pAck = MeshPacket(self.nodes, self.nodeid, p.origTxNodeId, self.nodeid, self.x, self.y, conf.ACKLENGTH, messageSeq, env.now, False, True, p.seq) 
+					pAck.hopLimit = 0  # only immediate neighbors 
+					self.packets.append(pAck)
+					self.env.process(self.transmit(pAck))
         # FloodingRouter: rebroadcasting received message 
-				if not ackReceived and p.hopLimit > 0:
-					pNew = MeshPacket(self.nodes, p.origTxNodeId, self.nodeid, self.x, self.y, conf.PACKETLENGTH, p.seq, p.genTime) 
+				elif not p.destId == self.nodeid and not ackReceived and not realAckReceived and p.hopLimit > 0:
+					verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'rebroadcasts received packet', p.seq)
+					pNew = MeshPacket(self.nodes, p.origTxNodeId, p.destId, self.nodeid, self.x, self.y, conf.PACKETLENGTH, p.seq, p.genTime, p.wantAck, False, None) 
 					pNew.hopLimit = p.hopLimit-1
 					self.packets.append(pNew)
 					self.env.process(self.transmit(pNew))
@@ -218,7 +246,10 @@ env.run(until=conf.SIMTIME)
 print("\n====== END OF SIMULATION ======")
 print('Number of messages created:', messageSeq)
 sent = len(packets)
-potentialReceivers = sent*(conf.NR_NODES-1)
+if conf.DMs:
+	potentialReceivers = sent
+else:
+	potentialReceivers = sent*(conf.NR_NODES-1)
 print('Number of packets sent:', sent, 'to', potentialReceivers, 'potential receivers')
 nrCollisions = sum([1 for p in packets for n in nodes if p.collidedAtN[n.nodeid] == True])
 print("Number of collisions:", nrCollisions)

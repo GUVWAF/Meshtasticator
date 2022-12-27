@@ -8,11 +8,14 @@ NODENUM_BROADCAST = 0xFFFFFFFF
 random.seed(conf.SEED)
 
 class MeshPacket(): 
-	def __init__(self, nodes, origTxNodeId, destId=NODENUM_BROADCAST, txNodeId, x, y, plen, seq, genTime):
+	def __init__(self, nodes, origTxNodeId, destId, txNodeId, x, y, plen, seq, genTime, wantAck, isAck, requestId):
 		self.origTxNodeId = origTxNodeId
-    self.destId = destId
+		self.destId = destId
 		self.txNodeId = txNodeId
+		self.wantAck = wantAck
+		self.isAck = isAck
 		self.seq = seq
+		self.requestId = requestId
 		self.genTime = genTime
 		self.txpow = conf.PTX
 		self.LplAtN = [0 for _ in range(conf.NR_NODES)]
@@ -51,8 +54,9 @@ class MeshPacket():
 
 
 class MeshMessage():
-	def __init__(self, origTxNodeId, genTime, seq):
+	def __init__(self, origTxNodeId, destId, genTime, seq):
 		self.origTxNodeId = origTxNodeId
+		self.destId = destId
 		self.genTime = genTime
 		self.seq = seq
 		self.endTime = 0

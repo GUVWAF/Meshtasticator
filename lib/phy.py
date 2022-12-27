@@ -87,6 +87,7 @@ def isChannelActive(node, env):
 
 
 def airtime(sf, cr, pl, bw):
+    pl = pl + conf.HEADERLENGTH  # add Meshtastic header length
     H = 0		# implicit header disabled (H=0) or not (H=1)
     DE = 0	   # low data rate optimization enabled (=1) or not (=0)
 

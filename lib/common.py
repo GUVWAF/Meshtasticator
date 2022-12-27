@@ -164,7 +164,7 @@ def plotSchedule(packets, messages):
 	for i,t in enumerate(timeSequences):
 		fig = plt.figure()
 		move_figure(fig, 900, 200)
-		plt.suptitle('Time schedule {}/{}\nClick to continue.'.format(i+1, len(timeSequences)))
+		plt.suptitle('Time schedule {}/{}\nPress a key to continue.'.format(i+1, len(timeSequences)))
 		for p in packets:  # collisions
 			if p.seq in [m.seq for m in t]: 
 				for rxId, bool in enumerate(p.collidedAtN):
@@ -172,7 +172,11 @@ def plotSchedule(packets, messages):
 						plt.barh(rxId, p.timeOnAir, left=p.startTime, color='red', edgecolor='r')
 		for p in packets:  # transmissions
 			if p.seq in [m.seq for m in t]:  
-				plt.barh(p.txNodeId, p.timeOnAir, left=p.startTime, color='blue', edgecolor='k')
+				if p.isAck: 
+					color = 'orange'
+				else: 
+					color = 'blue'
+				plt.barh(p.txNodeId, p.timeOnAir, left=p.startTime, color=color, edgecolor='k')
 				plt.text(p.startTime+p.timeOnAir/2, p.txNodeId, str(p.seq), horizontalalignment='center', verticalalignment='center', fontsize=12)
 		for p in packets:  # receptions
 			if p.seq in [m.seq for m in t]:  
@@ -190,7 +194,8 @@ def plotSchedule(packets, messages):
 		plt.ylabel('Node ID')
 		plt.xlim(minTime-0.03*(maxTime-minTime), maxTime)
 		plt.show(block=False)
-		plt.waitforbuttonpress()
+		while not plt.waitforbuttonpress():
+			plt.pause(0.1)
 		plt.close()
 
 
