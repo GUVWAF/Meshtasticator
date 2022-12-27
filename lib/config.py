@@ -15,6 +15,7 @@ HM = 1.0  # height of each node in m
 maxRetransmission = 3  # default 3
 hopLimit = 3  # default 3
 router = False  # set role of each node as router (True) or normal client (False) 
+DMs = False  # set True for sending DMs (with random destination), False for broadcasts
 ### End of Meshtastic specific ###
 
 ### Discrete-event specific ###
@@ -49,6 +50,8 @@ GAMMA = 2.08  # PHY parameter
 D0 = 40.0  # PHY parameter
 LPLD0 = 127.41  # PHY parameter
 NPREAM = 32   # number of preamble symbols from RadioInterface.h 
+HEADERLENGTH = 16  # number of Meshtastic header bytes 
+ACKLENGTH = 2  # ACK payload in bytes
 ### End of PHY parameters ###
 
 # Misc
