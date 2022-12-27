@@ -15,7 +15,7 @@ HM = 1.0  # height of each node in m
 maxRetransmission = 3  # default 3
 hopLimit = 3  # default 3
 router = False  # set role of each node as router (True) or normal client (False) 
-DMs = True  # set True for sending DMs (with random destination), False for broadcasts
+DMs = False  # set True for sending DMs (with random destination), False for broadcasts
 ### End of Meshtastic specific ###
 
 ### Discrete-event specific ###
