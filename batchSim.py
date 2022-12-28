@@ -49,23 +49,18 @@ class MeshNode():
 	def generateMessage(self):
 		global messageSeq
 		while True:	
-			# if self.nodeid == 0:
 			nextGen = random.expovariate(1.0/float(self.period))
-			# else:
-				# nextGen = NODENUM_BROADCAST
 			# do not generate message near the end of the simulation (otherwise flooding cannot finish in time)
 			if self.env.now+nextGen+conf.hopLimit*airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], conf.PACKETLENGTH, conf.BWMODEM[conf.MODEM]) < conf.SIMTIME:
 				yield self.env.timeout(nextGen) 
 
 				if conf.DMs:
 					destId = random.choice([i for i in range(0, len(nodes)) if i is not self.nodeid])
-					# if self.nodeid == 0:
-					# 	destId = 2
 				else:
 					destId = NODENUM_BROADCAST
 				messageSeq += 1
 				self.messages.append(MeshMessage(self.nodeid, destId, self.env.now, messageSeq))
-				p = MeshPacket(self.nodes, self.nodeid, destId, self.nodeid, self.x, self.y, conf.PACKETLENGTH, messageSeq, self.env.now, True, False, None)  
+				p = MeshPacket(self.nodes, self.nodeid, destId, self.nodeid, conf.PACKETLENGTH, messageSeq, self.env.now, True, False, None)  
 				verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'generated message', p.seq, 'to', destId)
 				self.packets.append(p)
 				self.env.process(self.transmit(p))
@@ -86,7 +81,7 @@ class MeshNode():
 						break
 					else: 
 						if minRetransmissions > 0:  # generate new packet with same sequence number
-							pNew = MeshPacket(self.nodes, self.nodeid, p.destId, self.nodeid, self.x, self.y, conf.PACKETLENGTH, p.seq, p.genTime, p.wantAck, False, None)  
+							pNew = MeshPacket(self.nodes, self.nodeid, p.destId, self.nodeid, conf.PACKETLENGTH, p.seq, p.genTime, p.wantAck, False, None)  
 							pNew.retransmissions = minRetransmissions-1
 							verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'wants to retransmit its generated packet to', destId, 'with seq.nr.', p.seq, 'minRetransmissions', minRetransmissions)
 							self.packets.append(pNew)							
@@ -199,14 +194,14 @@ class MeshNode():
 					verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'sends a flooding ACK.')
 					messageSeq += 1
 					self.messages.append(MeshMessage(self.nodeid, p.origTxNodeId, self.env.now, messageSeq))
-					pAck = MeshPacket(self.nodes, self.nodeid, p.origTxNodeId, self.nodeid, self.x, self.y, conf.ACKLENGTH, messageSeq, env.now, False, True, p.seq) 
+					pAck = MeshPacket(self.nodes, self.nodeid, p.origTxNodeId, self.nodeid, conf.ACKLENGTH, messageSeq, env.now, False, True, p.seq) 
 					pAck.hopLimit = 0  # only immediate neighbors 
 					self.packets.append(pAck)
 					self.env.process(self.transmit(pAck))
         # FloodingRouter: rebroadcasting received message 
 				elif not p.destId == self.nodeid and not ackReceived and not realAckReceived and p.hopLimit > 0:
 					verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'rebroadcasts received packet', p.seq)
-					pNew = MeshPacket(self.nodes, p.origTxNodeId, p.destId, self.nodeid, self.x, self.y, conf.PACKETLENGTH, p.seq, p.genTime, p.wantAck, False, None) 
+					pNew = MeshPacket(self.nodes, p.origTxNodeId, p.destId, self.nodeid, conf.PACKETLENGTH, p.seq, p.genTime, p.wantAck, False, None) 
 					pNew.hopLimit = p.hopLimit-1
 					self.packets.append(pNew)
 					self.env.process(self.transmit(pNew))

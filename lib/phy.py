@@ -104,44 +104,44 @@ def airtime(sf, cr, pl, bw):
     return (Tpream + Tpayload)*1000
 
 
-def estimatePathLoss(dist, freq):	
+def estimatePathLoss(dist, freq, txZ=conf.HM, rxZ=conf.HM):	
     # Log-Distance model
     if conf.MODEL == 0: 
         Lpl = conf.LPLD0 + 10*conf.GAMMA*math.log10(dist/conf.D0)
             
     # Okumura-Hata model
     elif conf.MODEL >= 1 and conf.MODEL <= 4:
-        #small and medium-size cities
+        # small and medium-size cities
         if conf.MODEL == 1:
-            ahm = (1.1*(math.log10(freq)-math.log10(1000000))-0.7)*conf.HM \
+            ahm = (1.1*(math.log10(freq)-math.log10(1000000))-0.7)*txZ \
             - (1.56*(math.log10(freq)-math.log10(1000000))-0.8)
             
             C = 0 
-        #metropolitan areas
+        # metropolitan areas
         elif conf.MODEL == 2:
             if (freq <= 200000000):
-                ahm = 8.29*((math.log10(1.54*conf.HM))**2) - 1.1
+                ahm = 8.29*((math.log10(1.54*txZ))**2) - 1.1
             elif (freq >= 400000000):
-                ahm = 3.2*((math.log10(11.75*conf.HM))**2) - 4.97
+                ahm = 3.2*((math.log10(11.75*txZ))**2) - 4.97
             C = 0
-        #suburban enviroments
+        # suburban enviroments
         elif conf.MODEL == 3:
-            ahm = (1.1*(math.log10(freq)-math.log10(1000000))-0.7)*conf.HM \
+            ahm = (1.1*(math.log10(freq)-math.log10(1000000))-0.7)*txZ \
             - (1.56*(math.log10(freq)-math.log10(1000000))-0.8)
             
             C = -2*((math.log10(freq)-math.log10(28000000))**2) - 5.4
-        #rural area
+        # rural area
         elif conf.MODEL == 4:
-            ahm = (1.1*(math.log10(freq)-math.log10(1000000))-0.7)*conf.HM \
+            ahm = (1.1*(math.log10(freq)-math.log10(1000000))-0.7)*txZ \
             - (1.56*(math.log10(freq)-math.log10(1000000))-0.8)
             
             C = -4.78*((math.log10(freq)-math.log10(1000000))**2) \
             +18.33*(math.log10(freq)-math.log10(1000000)) - 40.98
             
         A = 69.55 + 26.16*(math.log10(freq)-math.log10(1000000)) \
-        - 13.82*math.log(conf.HM) - ahm
+        - 13.82*math.log(rxZ) - ahm
         
-        B = 44.9-6.55*math.log10(conf.HM)
+        B = 44.9-6.55*math.log10(rxZ)
 
         Lpl = A + B*(math.log10(dist)-math.log10(1000)) + C		
         
@@ -154,14 +154,14 @@ def estimatePathLoss(dist, freq):
         elif conf.MODEL == 6:
             C = 3 #dB
             
-        Lpl = (44.9-6.55*math.log10(conf.HM))*(math.log10(dist) - math.log10(1000)) \
-        + 45.5 + (35.46-1.1*conf.HM)*(math.log10(freq)-math.log10(1000000)) \
-        - 13.82*math.log10(conf.HM)+0.7*conf.HM+C
+        Lpl = (44.9-6.55*math.log10(rxZ))*(math.log10(dist) - math.log10(1000)) \
+        + 45.5 + (35.46-1.1*txZ)*(math.log10(freq)-math.log10(1000000)) \
+        - 13.82*math.log10(txZ)+0.7*txZ+C
         
     return Lpl
 
 def zeroLinkBudget(dist):
-    return conf.PTX + conf.GL - estimatePathLoss(dist, conf.FREQ) - conf.SENSMODEM[conf.MODEM]
+    return conf.PTX + 2*conf.GL - estimatePathLoss(dist, conf.FREQ) - conf.SENSMODEM[conf.MODEM]
 
 
 MAXRANGE = fsolve(zeroLinkBudget, 1500)

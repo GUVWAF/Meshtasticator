@@ -32,6 +32,9 @@ def getParams(args):
 			config = genScenario()
 		if config[0] is not None:
 			conf.NR_NODES = len(config.keys())
+		if conf.NR_NODES < 2:
+			print("Need at least two nodes.")
+			exit(1)
 		
 	print("Number of nodes:", conf.NR_NODES)
 	print("Modem:", conf.MODEM)
@@ -48,13 +51,13 @@ def setBatch(simNr):
 
 def genScenario(plotRange = True):
 	save = True  # set to True if you want to save the coordinates of the nodes 
-	filename = "coords"
 	nodeX = []
 	nodeY = []
 	nodeZ = []
 	nodeRouter = []
 	nodeHopLimit = []
 	nodeTxts = []
+	gains = []
 
 	fig = plt.figure()
 	ax = fig.add_subplot(111)
@@ -65,22 +68,29 @@ def genScenario(plotRange = True):
 	plt.ylabel('y (m)')
 	plt.xlim(-(conf.XSIZE/2+1)+conf.OX, conf.OX+conf.XSIZE/2+1)
 	plt.ylim(-(conf.YSIZE/2+1)+conf.OY, conf.OY+conf.YSIZE/2+1)
-	add_button_ax = fig.add_axes([0.37, 0.05, 0.2, 0.06])
-	add_button = Button(add_button_ax, 'Start simulation', color='red', hovercolor='green')
-	add_router_ax = fig.add_axes([0.86, 0.65, 0.12, 0.2])
-	add_router_ax.set_axis_off()
-	add_checkButton = CheckButtons(add_router_ax, ['Router'], [conf.router])
-	add_router_ax.set_visible(False)
-	add_slider_ax = fig.add_axes([0.86, 0.40, 0.1, 0.25])
-	add_slider = Slider(add_slider_ax, 'HopLimit', 0, 7, conf.hopLimit, valstep=1, orientation="vertical")
-	add_slider_ax.set_visible(False)
-	add_textbox_ax = fig.add_axes([0.89, 0.25, 0.05, 0.04])
-	add_textbox = TextBox(add_textbox_ax, 'Height (m)', conf.HM, textalignment='center')
-	add_textbox_ax.set_visible(False)
-	textBoxLabel = add_textbox.ax.get_children()[0]
+	button_ax = fig.add_axes([0.37, 0.05, 0.2, 0.06])
+	button = Button(button_ax, 'Start simulation', color='red', hovercolor='green')
+	router_ax = fig.add_axes([0.86, 0.67, 0.12, 0.2])
+	router_ax.set_axis_off()
+	checkButton = CheckButtons(router_ax, ['Router'], [conf.router])
+	router_ax.set_visible(False)
+	slider_ax = fig.add_axes([0.86, 0.42, 0.1, 0.25])
+	slider = Slider(slider_ax, 'HopLimit', 0, 7, conf.hopLimit, valstep=1, orientation="vertical")
+	slider_ax.set_visible(False)
+	height_ax = fig.add_axes([0.89, 0.30, 0.05, 0.04])
+	height_textbox = TextBox(height_ax, 'Height (m)', conf.HM, textalignment='center')
+	height_ax.set_visible(False)
+	textBoxLabel = height_textbox.ax.get_children()[0]
 	textBoxLabel.set_position([0.5, 1.75]) 
 	textBoxLabel.set_verticalalignment('top')
 	textBoxLabel.set_horizontalalignment('center')
+	gain_ax = fig.add_axes([0.89, 0.19, 0.05, 0.04])
+	gain_textbox = TextBox(gain_ax, 'Antenna \ngain (dBi)', conf.GL, textalignment='center')
+	gain_ax.set_visible(False)
+	gainLabel = gain_textbox.ax.get_children()[0]
+	gainLabel.set_position([0.5, 2.5]) 
+	gainLabel.set_verticalalignment('top')
+	gainLabel.set_horizontalalignment('center')
 
 	def plotting():
 		ax.cla()
@@ -97,9 +107,10 @@ def genScenario(plotRange = True):
 		if len(nodeTxts) > 0:
 			nodeTxts[-1].set_visible(False)
 		else:
-			add_router_ax.set_visible(True)
-			add_slider_ax.set_visible(True)
-			add_textbox_ax.set_visible(True)
+			router_ax.set_visible(True)
+			slider_ax.set_visible(True)
+			height_ax.set_visible(True)
+			gain_ax.set_visible(True)
 		nodeTxts.append(plt.text(0.92, 0.80, 'Configure \nnode '+str(len(nodeX)-1)+':', \
 			fontweight='bold', horizontalalignment='center', transform=fig.transFigure))
 
@@ -108,25 +119,31 @@ def genScenario(plotRange = True):
 
 
 	def submit(mouse_event):
-		nodeZ.append(float(add_textbox.text))
-		nodeRouter.append(add_checkButton.get_status()[0])
-		nodeHopLimit.append(add_slider.val)
+		if (len(nodeX)) < 2:
+			print("Need at least two nodes.")
+			exit(1)
+		nodeZ.append(float(height_textbox.text))
+		nodeRouter.append(checkButton.get_status()[0])
+		nodeHopLimit.append(slider.val)
+		gains.append(float(gain_textbox.text))
 		fig.canvas.mpl_disconnect(cid)
 		plt.close()
 
-	add_button.on_clicked(submit)
+	button.on_clicked(submit)
 
 	def onclick(event):
 		if event.dblclick:
 			if len(nodeX) > 0:
-				nodeZ.append(float(add_textbox.text))
-				isRouter = add_checkButton.get_status()[0]
+				nodeZ.append(float(height_textbox.text))
+				isRouter = checkButton.get_status()[0]
 				nodeRouter.append(isRouter)
-				nodeHopLimit.append(add_slider.val)
-				add_textbox.set_val(conf.HM)
+				nodeHopLimit.append(slider.val)
+				gains.append(float(gain_textbox.text))
+				height_textbox.set_val(conf.HM)
 				if isRouter:
-					add_checkButton.set_active(0)
-				add_slider.set_val(conf.hopLimit)
+					checkButton.set_active(0)
+				slider.set_val(conf.hopLimit)
+				gain_textbox.set_val(conf.GL)
 			x = float(event.xdata)
 			y = float(event.ydata)
 			nodeX.append(x)
@@ -139,7 +156,8 @@ def genScenario(plotRange = True):
 		if not os.path.isdir("out"):
 			os.mkdir("out")
 		nodeDict = {n: {'x': nodeX[n], 'y': nodeY[n], 'z': nodeZ[n], \
-			'isRouter': nodeRouter[n], 'hopLimit':nodeHopLimit[n]} for n in range(len(nodeX))}
+			'isRouter': nodeRouter[n], 'hopLimit':nodeHopLimit[n], \
+		 	'antennaGain': gains[n]} for n in range(len(nodeX))}
 		with open(os.path.join("out", "nodeConfig.yaml"), 'w') as file:
 			yaml.dump(nodeDict, file) 
 	
@@ -162,7 +180,7 @@ def findRandomPosition(nodes):
 					foundMin = False
 					break
 				pathLoss = phy.estimatePathLoss(dist, conf.FREQ)
-				rssi = conf.PTX + conf.GL - pathLoss
+				rssi = conf.PTX + 2*conf.GL - pathLoss
 				if rssi >= conf.SENSMODEM[conf.MODEM]:
 					foundMax = True
 			if foundMin and foundMax:
@@ -180,8 +198,8 @@ def findRandomPosition(nodes):
 	return x,y
 
 
-def calcDist(x0, y0, x1, y1): 
-	return np.sqrt(((abs(x0-x1))**2)+((abs(y0-y1))**2))
+def calcDist(x0, y0, x1, y1, z0=0, z1=0): 
+	return np.sqrt(((abs(x0-x1))**2)+((abs(y0-y1))**2)+((abs(z0-z1)**2)))
 
 
 def plotSchedule(packets, messages):

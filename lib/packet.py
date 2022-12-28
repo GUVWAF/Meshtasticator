@@ -8,7 +8,7 @@ NODENUM_BROADCAST = 0xFFFFFFFF
 random.seed(conf.SEED)
 
 class MeshPacket(): 
-	def __init__(self, nodes, origTxNodeId, destId, txNodeId, x, y, plen, seq, genTime, wantAck, isAck, requestId):
+	def __init__(self, nodes, origTxNodeId, destId, txNodeId, plen, seq, genTime, wantAck, isAck, requestId):
 		self.origTxNodeId = origTxNodeId
 		self.destId = destId
 		self.txNodeId = txNodeId
@@ -31,12 +31,13 @@ class MeshPacket():
 		self.cr = conf.CRMODEM[conf.MODEM]
 		self.bw = conf.BWMODEM[conf.MODEM]
 		self.freq = conf.FREQ
+		tx_node = next(n for n in nodes if n.nodeid == self.txNodeId)
 		for rx_node in nodes:
 			if rx_node.nodeid == self.txNodeId:
 				continue
-			dist_2d = calcDist(x, y, rx_node.x, rx_node.y) # np.sqrt((x-rx_node.x)*(x-rx_node.x)+(y-rx_node.y)*(y-rx_node.y))
-			self.LplAtN[rx_node.nodeid] = estimatePathLoss(dist_2d, self.freq)
-			self.rssiAtN[rx_node.nodeid] = self.txpow + conf.GL - self.LplAtN[rx_node.nodeid]
+			dist_3d = calcDist(tx_node.x, tx_node.y, rx_node.x, rx_node.y, tx_node.z, rx_node.z) 
+			self.LplAtN[rx_node.nodeid] = estimatePathLoss(dist_3d, self.freq, tx_node.z, rx_node.z)
+			self.rssiAtN[rx_node.nodeid] = self.txpow + tx_node.antennaGain + rx_node.antennaGain - self.LplAtN[rx_node.nodeid]
 			if self.rssiAtN[rx_node.nodeid] >= conf.SENSMODEM[conf.MODEM]:
 				self.sensedByN[rx_node.nodeid] = True
 			if self.rssiAtN[rx_node.nodeid] >= conf.CADMODEM[conf.MODEM]:
@@ -50,7 +51,7 @@ class MeshPacket():
 		# Routing
 		self.retransmissions = conf.maxRetransmission
 		self.ackReceived = False
-		self.hopLimit = conf.hopLimit  # TODO use config of node
+		self.hopLimit = tx_node.hopLimit
 
 
 class MeshMessage():

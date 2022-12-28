@@ -413,7 +413,7 @@ class interactiveSim():
     for rx in receivers:
       dist_2d = calcDist(tx.x, tx.y, rx.x, rx.y) 
       pathLoss = phy.estimatePathLoss(dist_2d, conf.FREQ)
-      RSSI = conf.PTX + conf.GL - pathLoss
+      RSSI = conf.PTX + 2*conf.GL - pathLoss
       SNR = RSSI-conf.NOISE_LEVEL
       if RSSI >= conf.SENSMODEM[conf.MODEM]:
         rxs.append(rx)

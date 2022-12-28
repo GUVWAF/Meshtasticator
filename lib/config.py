@@ -8,7 +8,7 @@ OX = 0.0  # origin x-coordinate
 OY = 0.0  # origin y-coordinate
 MINDIST = 10  # minimum distance between each node in the area in m
 
-GL = 0	# antenna gain of each node in dB
+GL = 0	# antenna gain of each node in dBi
 HM = 1.0  # height of each node in m
 
 ### Meshtastic specific ###

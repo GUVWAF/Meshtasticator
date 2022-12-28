@@ -33,4 +33,4 @@ The simulator uses a pathloss model to calculate how well a signal will propagat
 * ```6``` set the 3GPP for metropolitan macro-cell  
 
 You can change the pathloss model and the area to simulate in */lib/config.py*. 
-Here you can also specify which antenna gain (default is 0dB) and height (default is 1m) is used for the nodes. Currently the LoRa settings are kept to the default of Meshtastic.
+Here you can also specify which antenna gain (default is 0dBi) and height (default is 1m) is used for the nodes. Currently the LoRa settings are kept to the default of Meshtastic.
