@@ -152,12 +152,12 @@ def genScenario(plotRange = True):
 
 	cid = fig.canvas.mpl_connect('button_press_event', onclick)
 	plt.show()
+	nodeDict = {n: {'x': nodeX[n], 'y': nodeY[n], 'z': nodeZ[n], \
+		'isRouter': nodeRouter[n], 'hopLimit':nodeHopLimit[n], \
+		'antennaGain': gains[n]} for n in range(len(nodeX))}
 	if save:
 		if not os.path.isdir("out"):
 			os.mkdir("out")
-		nodeDict = {n: {'x': nodeX[n], 'y': nodeY[n], 'z': nodeZ[n], \
-			'isRouter': nodeRouter[n], 'hopLimit':nodeHopLimit[n], \
-		 	'antennaGain': gains[n]} for n in range(len(nodeX))}
 		with open(os.path.join("out", "nodeConfig.yaml"), 'w') as file:
 			yaml.dump(nodeDict, file) 
 	
@@ -175,7 +175,7 @@ def findRandomPosition(nodes):
 		posy = b*conf.YSIZE+conf.OY-conf.YSIZE/2
 		if len(nodes) > 0:
 			for n in nodes:
-				dist = calcDist(n.x, n.y, posx, posy)
+				dist = calcDist(n.x, posx, n.y, posy)
 				if dist < conf.MINDIST:
 					foundMin = False
 					break
@@ -198,7 +198,7 @@ def findRandomPosition(nodes):
 	return x,y
 
 
-def calcDist(x0, y0, x1, y1, z0=0, z1=0): 
+def calcDist(x0, x1, y0, y1, z0=0, z1=0): 
 	return np.sqrt(((abs(x0-x1))**2)+((abs(y0-y1))**2)+((abs(z0-z1)**2)))
 
 

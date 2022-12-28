@@ -12,10 +12,10 @@ GL = 0	# antenna gain of each node in dBi
 HM = 1.0  # height of each node in m
 
 ### Meshtastic specific ###
-maxRetransmission = 3  # default 3
 hopLimit = 3  # default 3
 router = False  # set role of each node as router (True) or normal client (False) 
 DMs = False  # set True for sending DMs (with random destination), False for broadcasts
+maxRetransmission = 3  # default 3 
 ### End of Meshtastic specific ###
 
 ### Discrete-event specific ###
@@ -45,13 +45,13 @@ SENSMODEM = np.array([-124.25, -126.75, -128.25, -130.25, -132.75, -133.25, -139
 # minimum received power for CAD (estimated based on SX126x datasheet)
 CADMODEM = np.array([-125, -128, -133, -134, -139, -139, -144])
 FREQ = REGION["freq_start"]+BWMODEM[MODEM]*CHANNEL_NUM
+HEADERLENGTH = 16  # number of Meshtastic header bytes 
+ACKLENGTH = 2  # ACK payload in bytes
 NOISE_LEVEL = -119.25  # some noise level in dB, based on SNR_MIN and minimum receiver sensitivity
 GAMMA = 2.08  # PHY parameter
 D0 = 40.0  # PHY parameter
 LPLD0 = 127.41  # PHY parameter
 NPREAM = 32   # number of preamble symbols from RadioInterface.h 
-HEADERLENGTH = 16  # number of Meshtastic header bytes 
-ACKLENGTH = 2  # ACK payload in bytes
 ### End of PHY parameters ###
 
 # Misc

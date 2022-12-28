@@ -35,7 +35,7 @@ class MeshPacket():
 		for rx_node in nodes:
 			if rx_node.nodeid == self.txNodeId:
 				continue
-			dist_3d = calcDist(tx_node.x, tx_node.y, rx_node.x, rx_node.y, tx_node.z, rx_node.z) 
+			dist_3d = calcDist(tx_node.x, rx_node.x, tx_node.y, rx_node.y, tx_node.z, rx_node.z) 
 			self.LplAtN[rx_node.nodeid] = estimatePathLoss(dist_3d, self.freq, tx_node.z, rx_node.z)
 			self.rssiAtN[rx_node.nodeid] = self.txpow + tx_node.antennaGain + rx_node.antennaGain - self.LplAtN[rx_node.nodeid]
 			if self.rssiAtN[rx_node.nodeid] >= conf.SENSMODEM[conf.MODEM]:

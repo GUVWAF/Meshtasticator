@@ -12,18 +12,42 @@ TCP_PORT_OFFSET = 4403
 
 
 class interactiveNode(): 
-  def __init__(self, nodes, nodeId, hwId, TCPPort, x=None, y=None):
+  def __init__(self, nodes, nodeId, hwId, TCPPort, nodeConfig):
     self.nodeid = nodeId
-    self.x = x
-    self.y = y
+    if nodeConfig is not None: 
+      self.x = nodeConfig['x']
+      self.y = nodeConfig['y']
+      self.z = nodeConfig['z']
+      self.isRouter = nodeConfig['isRouter']
+      self.hopLimit = nodeConfig['hopLimit']
+      self.antennaGain = nodeConfig['antennaGain']
+    else: 
+      self.x, self.y = findRandomPosition(nodes)
+      self.z = conf.HM
+      self.isRouter = conf.router
+      self.hopLimit = conf.hopLimit
+      self.antennaGain = conf.GL
     self.hwId = hwId
     self.TCPPort = TCPPort 
-    if self.x == None and self.y == None:
-      self.x, self.y = findRandomPosition(nodes)
 
 
   def addInterface(self, iface):
     self.iface = iface
+
+  
+  def setConfig(self):
+    if self.hopLimit != 3:
+      loraConfig = self.iface.localNode.localConfig.lora
+      setattr(self.iface.localNode.localConfig.lora, 'hop_limit', self.hopLimit)
+      p = admin_pb2.AdminMessage()
+      p.set_config.lora.CopyFrom(loraConfig)
+      self.iface.localNode._sendAdmin(p)
+    if self.isRouter:
+      deviceConfig = self.iface.localNode.localConfig.device
+      setattr(deviceConfig, 'role', "ROUTER")
+      p = admin_pb2.AdminMessage()
+      p.set_config.device.CopyFrom(deviceConfig)
+      self.iface.localNode._sendAdmin(p)
 
 
   def addAdminChannel(self):
@@ -230,12 +254,11 @@ class interactiveSim():
           print("Not sure if you want to start more than 10 terminals. Exiting.")
           exit(1)
         conf.NR_NODES = int(sys.argv[i])
-        xs = []
-        ys = []
         foundNodes = True
+        config = [None for _ in range(conf.NR_NODES)]
     if not foundNodes: 
-      [xs, ys] = genScenario()
-      conf.NR_NODES = len(xs)
+      config = genScenario()
+      conf.NR_NODES = len(config.keys())
     if len(sys.argv) > 2 and "--p" in sys.argv[2]:
       string = sys.argv[3]
       pathToProgram = string
@@ -253,10 +276,7 @@ class interactiveSim():
 
     self.graph = interactiveGraph()
     for n in range(conf.NR_NODES):
-      if len(xs) == 0: 
-        node = interactiveNode(self.nodes, n, n+HW_ID_OFFSET, n+TCP_PORT_OFFSET)
-      else:
-        node = interactiveNode(self.nodes, n, n+HW_ID_OFFSET, n+TCP_PORT_OFFSET, xs[n], ys[n])
+      node = interactiveNode(self.nodes, n, n+HW_ID_OFFSET, n+TCP_PORT_OFFSET, config[n])
       self.nodes.append(node)
       self.graph.addNode(node)
 
@@ -291,6 +311,8 @@ class interactiveSim():
         iface = tcp_interface.TCPInterface(hostname="localhost", portNumber=n.TCPPort)
         n.addInterface(iface)
       pub.subscribe(self.onReceive, "meshtastic.receive.simulator")
+      for n in self.nodes:
+        n.setConfig()
     except(Exception) as ex:
       print(f"Error: Could not connect to native program: {ex}")
       self.closeNodes()
@@ -411,9 +433,9 @@ class interactiveSim():
     rssis = []
     snrs = []
     for rx in receivers:
-      dist_2d = calcDist(tx.x, tx.y, rx.x, rx.y) 
-      pathLoss = phy.estimatePathLoss(dist_2d, conf.FREQ)
-      RSSI = conf.PTX + 2*conf.GL - pathLoss
+      dist_3d = calcDist(tx.x, rx.x, tx.y, rx.y, tx.z, rx.z) 
+      pathLoss = phy.estimatePathLoss(dist_3d, conf.FREQ, tx.z, rx.z)
+      RSSI = conf.PTX + tx.antennaGain + rx.antennaGain - pathLoss
       SNR = RSSI-conf.NOISE_LEVEL
       if RSSI >= conf.SENSMODEM[conf.MODEM]:
         rxs.append(rx)
