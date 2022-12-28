@@ -14,7 +14,9 @@ The interactive simulator can be run as follows:
 
 ```python3 interactiveSim.py [nrNodes] [--p <full-path-to-program>]```,
 
-where *nrNodes* (optional) is the number of instances you want to launch. Note that for each instance a terminal and TCP port (starting at 4403) is opened. If the number of nodes is given, they will be randomly placed, otherwise you first have to place the nodes on a plot.
+where *nrNodes* (optional) is the number of instances you want to launch. Note that for each instance a terminal and TCP port (starting at 4403) is opened. If the number of nodes is given, they will be randomly placed, otherwise you first have to place the nodes on a plot. After you place a node, you can optionally set the node as Router, change its hopLimit, height (elevation) and antenna gain. These settings will automatically save when you place a new node or when you start the simulation.
+
+![](/img/configNode.png)
 
 The nodes first exchange their NodeInfo. Afterwards, you can let them send messages. To specifiy what you want to send, modify the script in the 'try' clause. 
 Depending on the number of nodes, exchanging the NodeInfo might take quite some time. You can also disable these by removing setIntervalFromNow() in the NodeInfoModule (and PositionModule) in the device firmware. This works because the simulator already knows the NodeIDs. 
