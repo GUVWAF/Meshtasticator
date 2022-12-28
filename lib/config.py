@@ -61,7 +61,5 @@ RANDOM = False
 # End of misc
 
 # Initializers
-xs = []
-ys = []
-NR_NODES = []
+NR_NODES = None
 # End of initializers 

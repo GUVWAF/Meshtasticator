@@ -12,17 +12,23 @@ random.seed(conf.SEED)
 
 
 class MeshNode():
-	def __init__(self, nodes, env, bc_pipe, nodeid, period, messages, packetsAtN, packets, delays, x=None, y=None):
+	def __init__(self, nodes, env, bc_pipe, nodeid, period, messages, packetsAtN, packets, delays, nodeConfig):
 		self.nodeid = nodeid
-		self.x = x
-		self.y = y
-		self.z = conf.HM
+		if nodeConfig is not None: 
+			self.x = nodeConfig['x']
+			self.y = nodeConfig['y']
+			self.z = nodeConfig['z']
+			self.isRouter = nodeConfig['isRouter']
+			self.hopLimit = nodeConfig['hopLimit']
+		else: 
+			self.x, self.y = findRandomPosition(nodes)
+			self.isRouter = conf.router
+			self.hopLimit = conf.hopLimit
 		self.messageSeq = messageSeq
 		self.env = env
 		self.period = period
 		self.bc_pipe = bc_pipe
 		self.rx_snr = 0
-		self.isRouter = conf.router
 		self.nodes = nodes
 		self.messages = messages
 		self.packetsAtN = packetsAtN
@@ -35,9 +41,6 @@ class MeshNode():
 		self.usefulPackets = 0
 		self.txAirUtilization = 0
 		self.airUtilization = 0
-
-		if x is None and y is None: 
-			self.x, self.y = findRandomPosition(nodes)
 
 		env.process(self.generateMessage())
 		env.process(self.receive(self.bc_pipe.get_output_conn()))
@@ -52,7 +55,7 @@ class MeshNode():
 			# else:
 				# nextGen = NODENUM_BROADCAST
 			# do not generate message near the end of the simulation (otherwise flooding cannot finish in time)
-			if self.env.now+nextGen+conf.hopLimit*airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], conf.PACKETLENGTH, conf.BWMODEM[conf.MODEM]) < conf.SIMTIME:
+			if self.env.now+nextGen+self.hopLimit*airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], conf.PACKETLENGTH, conf.BWMODEM[conf.MODEM]) < conf.SIMTIME:
 				yield self.env.timeout(nextGen) 
 
 				if conf.DMs:
@@ -217,7 +220,7 @@ else:
 	def verboseprint(*args, **kwargs): 
 		pass
 
-getParams(sys.argv)	
+nodeConfig = getParams(sys.argv)	
 env = simpy.Environment()
 bc_pipe = BroadcastPipe(env)
 
@@ -231,10 +234,7 @@ messageSeq = 0
 
 graph = Graph()
 for i in range(conf.NR_NODES):
-	if len(conf.xs) == 0: 
-		node = MeshNode(nodes, env, bc_pipe, i, conf.PERIOD, messages, packetsAtN, packets, delays)
-	else: 
-		node = MeshNode(nodes, env, bc_pipe, i, conf.PERIOD, messages, packetsAtN, packets, delays, conf.xs[i], conf.ys[i])
+	node = MeshNode(nodes, env, bc_pipe, i, conf.PERIOD, messages, packetsAtN, packets, delays, nodeConfig[i])
 	nodes.append(node)
 	graph.addNode(node)
 

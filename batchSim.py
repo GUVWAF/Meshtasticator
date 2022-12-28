@@ -257,10 +257,9 @@ for p, nrNodes in enumerate(parameters):
 		while not found:
 			nodes = []
 			for nodeId in range(conf.NR_NODES):
-				if len(conf.xs) == 0: 
-					node = MeshNode(nodes, env, bc_pipe, nodeId, conf.PERIOD, messages, packetsAtN, packets, delays)
-					if node.x == None:
-						break
+				node = MeshNode(nodes, env, bc_pipe, nodeId, conf.PERIOD, messages, packetsAtN, packets, delays)
+				if node.x == None:
+					break
 				nodes.append(node)
 			if len(nodes) == conf.NR_NODES:
 				found = True

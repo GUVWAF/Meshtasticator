@@ -4,10 +4,11 @@ from . import phy
 import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Button
+from matplotlib.widgets import Button, Slider, CheckButtons, TextBox
 import os
 import numpy as np
 import random
+import yaml 
 	
 
 def getParams(args):
@@ -18,21 +19,26 @@ def getParams(args):
 	else:
 		if len(args) > 1:
 			if type(args[1]) == str and ("--from-file" in args[1]):
-				string = args[2]
-				conf.xs = np.load(os.path.join("out", "coords", string+"_x.npy"))
-				conf.ys = np.load(os.path.join("out", "coords", string+"_y.npy"))
-				conf.NR_NODES = len(conf.xs)
+				if len(args) > 2:
+					string = args[2]
+				else:
+					string = 'nodeConfig.yaml'
+				with open(os.path.join("out", string), 'r') as file: 
+					config = yaml.load(file, Loader=yaml.FullLoader)
 			else:
 				conf.NR_NODES = int(args[1])
+				config = [None for _ in range(conf.NR_NODES)]
 		else: 
-			[conf.xs, conf.ys] = genScenario()
-			conf.NR_NODES = len(conf.xs)
+			config = genScenario()
+		if config[0] is not None:
+			conf.NR_NODES = len(config.keys())
 		
 	print("Number of nodes:", conf.NR_NODES)
 	print("Modem:", conf.MODEM)
 	print("Simulation time (s):", conf.SIMTIME/1000)
 	print("Period (s):", conf.PERIOD/1000)
 	print("Interference level:", conf.INTERFERENCE_LEVEL)
+	return config
 
 
 def setBatch(simNr):
@@ -45,17 +51,36 @@ def genScenario(plotRange = True):
 	filename = "coords"
 	nodeX = []
 	nodeY = []
+	nodeZ = []
+	nodeRouter = []
+	nodeHopLimit = []
+	nodeTxts = []
 
 	fig = plt.figure()
 	ax = fig.add_subplot(111)
-	fig.subplots_adjust(bottom=0.20)
-	plt.title("Double click to place nodes. Press continue to start the simulation.")
+	fig.subplots_adjust(bottom=0.20, right=0.85) # Make room for button and config
+	title = "Double click to place a node. Then change its config (optional)."
+	plt.title(title)
 	plt.xlabel('x (m)')
 	plt.ylabel('y (m)')
 	plt.xlim(-(conf.XSIZE/2+1)+conf.OX, conf.OX+conf.XSIZE/2+1)
 	plt.ylim(-(conf.YSIZE/2+1)+conf.OY, conf.OY+conf.YSIZE/2+1)
-	add_button_ax = fig.add_axes([0.5-0.05, 0.05, 0.2, 0.04])
-	add_button = Button(add_button_ax, 'Continue')
+	add_button_ax = fig.add_axes([0.37, 0.05, 0.2, 0.06])
+	add_button = Button(add_button_ax, 'Start simulation', color='red', hovercolor='green')
+	add_router_ax = fig.add_axes([0.86, 0.65, 0.12, 0.2])
+	add_router_ax.set_axis_off()
+	add_checkButton = CheckButtons(add_router_ax, ['Router'], [conf.router])
+	add_router_ax.set_visible(False)
+	add_slider_ax = fig.add_axes([0.86, 0.40, 0.1, 0.25])
+	add_slider = Slider(add_slider_ax, 'HopLimit', 0, 7, conf.hopLimit, valstep=1, orientation="vertical")
+	add_slider_ax.set_visible(False)
+	add_textbox_ax = fig.add_axes([0.89, 0.25, 0.05, 0.04])
+	add_textbox = TextBox(add_textbox_ax, 'Height (m)', conf.HM, textalignment='center')
+	add_textbox_ax.set_visible(False)
+	textBoxLabel = add_textbox.ax.get_children()[0]
+	textBoxLabel.set_position([0.5, 1.75]) 
+	textBoxLabel.set_verticalalignment('top')
+	textBoxLabel.set_horizontalalignment('center')
 
 	def plotting():
 		ax.cla()
@@ -63,17 +88,29 @@ def genScenario(plotRange = True):
 		ax.set_ylabel('y (m)')
 		ax.set_xlim(-(conf.XSIZE/2+1)+conf.OX, conf.OX+conf.XSIZE/2+1)
 		ax.set_ylim(-(conf.YSIZE/2+1)+conf.OY, conf.OY+conf.YSIZE/2+1)
-		ax.set_title("Double click to place nodes. Press continue to start the simulation.")
+		ax.set_title(title)
 		if plotRange:
 			for i,(nx,ny) in enumerate(zip(nodeX, nodeY)):
 				ax.annotate(str(i), (nx-5, ny+5))
 				circle = plt.Circle((nx, ny), radius=phy.MAXRANGE, color=plt.cm.Set1(i), alpha=0.1)
 				ax.add_patch(circle)
+		if len(nodeTxts) > 0:
+			nodeTxts[-1].set_visible(False)
+		else:
+			add_router_ax.set_visible(True)
+			add_slider_ax.set_visible(True)
+			add_textbox_ax.set_visible(True)
+		nodeTxts.append(plt.text(0.92, 0.80, 'Configure \nnode '+str(len(nodeX)-1)+':', \
+			fontweight='bold', horizontalalignment='center', transform=fig.transFigure))
+
 		ax.scatter(nodeX, nodeY)
 		fig.canvas.draw_idle()
 
 
 	def submit(mouse_event):
+		nodeZ.append(float(add_textbox.text))
+		nodeRouter.append(add_checkButton.get_status()[0])
+		nodeHopLimit.append(add_slider.val)
 		fig.canvas.mpl_disconnect(cid)
 		plt.close()
 
@@ -81,6 +118,15 @@ def genScenario(plotRange = True):
 
 	def onclick(event):
 		if event.dblclick:
+			if len(nodeX) > 0:
+				nodeZ.append(float(add_textbox.text))
+				isRouter = add_checkButton.get_status()[0]
+				nodeRouter.append(isRouter)
+				nodeHopLimit.append(add_slider.val)
+				add_textbox.set_val(conf.HM)
+				if isRouter:
+					add_checkButton.set_active(0)
+				add_slider.set_val(conf.hopLimit)
 			x = float(event.xdata)
 			y = float(event.ydata)
 			nodeX.append(x)
@@ -90,14 +136,14 @@ def genScenario(plotRange = True):
 	cid = fig.canvas.mpl_connect('button_press_event', onclick)
 	plt.show()
 	if save:
-		if not os.path.isdir(os.path.join("out", "coords")):
-			if not os.path.isdir("out"):
-				os.mkdir("out")
-			os.mkdir(os.path.join("out", "coords"))
-		np.save(os.path.join("out", "coords", filename+"_x.npy"), np.array(nodeX))
-		np.save(os.path.join("out", "coords", filename+"_y.npy"), np.array(nodeY))
+		if not os.path.isdir("out"):
+			os.mkdir("out")
+		nodeDict = {n: {'x': nodeX[n], 'y': nodeY[n], 'z': nodeZ[n], \
+			'isRouter': nodeRouter[n], 'hopLimit':nodeHopLimit[n]} for n in range(len(nodeX))}
+		with open(os.path.join("out", "nodeConfig.yaml"), 'w') as file:
+			yaml.dump(nodeDict, file) 
 	
-	return nodeX, nodeY
+	return nodeDict
 
 
 def findRandomPosition(nodes):

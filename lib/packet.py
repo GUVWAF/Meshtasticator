@@ -50,7 +50,7 @@ class MeshPacket():
 		# Routing
 		self.retransmissions = conf.maxRetransmission
 		self.ackReceived = False
-		self.hopLimit = conf.hopLimit
+		self.hopLimit = conf.hopLimit  # TODO use config of node
 
 
 class MeshMessage():
