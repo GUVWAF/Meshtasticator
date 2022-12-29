@@ -123,6 +123,7 @@ def genScenario(plotRange = True):
 
 		ax.scatter(nodeX, nodeY)
 		fig.canvas.draw_idle()
+		fig.canvas.get_tk_widget().focus_set()
 
 
 	def submit(mouse_event):
@@ -214,8 +215,42 @@ def calcDist(x0, x1, y0, y1, z0=0, z1=0):
 	return np.sqrt(((abs(x0-x1))**2)+((abs(y0-y1))**2)+((abs(z0-z1)**2)))
 
 
+scheduleIdx = 0
 def plotSchedule(packets, messages):
-	maxTime = 0
+	def drawSchedule(i):
+		t = timeSequences[i]
+		plt.suptitle('Time schedule {}/{}\nDouble click to continue.'.format(i+1, len(timeSequences)))
+		for p in packets:  # collisions
+			if p.seq in [m.seq for m in t]: 
+				for rxId, bool in enumerate(p.collidedAtN):
+					if bool:
+						plt.barh(rxId, p.timeOnAir, left=p.startTime, color='red', edgecolor='r')
+		for p in packets:  # transmissions
+			if p.seq in [m.seq for m in t]:  
+				if p.isAck: 
+					color = 'orange'
+				else: 
+					color = 'blue'
+				plt.barh(p.txNodeId, p.timeOnAir, left=p.startTime, color=color, edgecolor='k')
+				plt.text(p.startTime+p.timeOnAir/2, p.txNodeId, str(p.seq), horizontalalignment='center', verticalalignment='center', fontsize=12)
+		for p in packets:  # receptions
+			if p.seq in [m.seq for m in t]:  
+				for rxId, bool in enumerate(p.receivedAtN):
+					if bool:
+						plt.barh(rxId, p.timeOnAir, left=p.startTime, color='green', edgecolor='green')
+		maxTime = 0
+		for m in t:  # message generations
+			plt.arrow(m.genTime, m.origTxNodeId-0.4, 0, 0.5, head_width=0.02*(m.endTime-m.genTime), head_length=0.3, fc='k', ec='k')
+			plt.text(m.genTime, m.origTxNodeId+0.51, str(m.seq), horizontalalignment='center', verticalalignment='center', fontsize=12)
+		maxTime = max([m.endTime for m in t])
+		minTime = min([m.genTime for m in t])
+		
+		plt.xlabel('Time (ms)')
+		plt.ylabel('Node ID')
+		plt.yticks([0]+list(range(conf.NR_NODES)), label=[str(n) for n in [0]+list(range(conf.NR_NODES))])
+		plt.xlim(minTime-0.03*(maxTime-minTime), maxTime)
+		plt.show()	
+
 	# combine all messages with overlapping packets in one time sequence 
 	overlapping = [[m] for m in messages]
 	for m in messages:
@@ -236,43 +271,22 @@ def plotSchedule(packets, messages):
 			timeSequences.append(maxSet)
 	# do not plot time sequences with messages that were only generated but not sent 
 	timeSequences = [t for t in timeSequences if max([m.endTime for m in t]) != 0]
-	# plot each time sequence in new figure
-	for i,t in enumerate(timeSequences):
-		fig = plt.figure()
-		move_figure(fig, 900, 200)
-		plt.suptitle('Time schedule {}/{}\nPress a key to continue.'.format(i+1, len(timeSequences)))
-		for p in packets:  # collisions
-			if p.seq in [m.seq for m in t]: 
-				for rxId, bool in enumerate(p.collidedAtN):
-					if bool:
-						plt.barh(rxId, p.timeOnAir, left=p.startTime, color='red', edgecolor='r')
-		for p in packets:  # transmissions
-			if p.seq in [m.seq for m in t]:  
-				if p.isAck: 
-					color = 'orange'
-				else: 
-					color = 'blue'
-				plt.barh(p.txNodeId, p.timeOnAir, left=p.startTime, color=color, edgecolor='k')
-				plt.text(p.startTime+p.timeOnAir/2, p.txNodeId, str(p.seq), horizontalalignment='center', verticalalignment='center', fontsize=12)
-		for p in packets:  # receptions
-			if p.seq in [m.seq for m in t]:  
-				for rxId, bool in enumerate(p.receivedAtN):
-					if bool:
-						plt.barh(rxId, p.timeOnAir, left=p.startTime, color='green', edgecolor='green')
-		for m in t:  # message generations
-			plt.arrow(m.genTime, m.origTxNodeId-0.4, 0, 0.5, head_width=0.02*(m.endTime-m.genTime), head_length=0.3, fc='k', ec='k')
-			plt.text(m.genTime, m.origTxNodeId+0.51, str(m.seq), horizontalalignment='center', verticalalignment='center', fontsize=12)
-		maxTime = max([m.endTime for m in t])
-		minTime = min([m.genTime for m in t])
-		
-		plt.yticks([0]+list(range(conf.NR_NODES)), label=[str(n) for n in [0]+list(range(conf.NR_NODES))])
-		plt.xlabel('Time (ms)')
-		plt.ylabel('Node ID')
-		plt.xlim(minTime-0.03*(maxTime-minTime), maxTime)
-		plt.show(block=False)
-		while not plt.waitforbuttonpress():
-			plt.pause(0.1)
-		plt.close()
+
+	# plot each time sequence
+	fig = plt.figure()
+	move_figure(fig, 900, 200)
+	def onclick(event):
+		if event.dblclick:
+			global scheduleIdx
+			plt.cla()
+			scheduleIdx += 1
+			if scheduleIdx < len(timeSequences):
+				drawSchedule(scheduleIdx)	
+			else:
+				plt.close('all')
+
+	fig.canvas.mpl_connect('button_press_event', onclick)
+	drawSchedule(0)
 
 
 def move_figure(fig, x, y):
