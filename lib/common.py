@@ -13,7 +13,7 @@ import yaml
 
 def getParams(args):
 	if len(args) > 3:
-		print("Usage: ./loraMesh [nr_nodes] [--from-file <file_name>]")
+		print("Usage: ./loraMesh [nr_nodes] [--from-file [file_name]]")
 		print("Do not specify the number of nodes when reading from a file.")
 		exit(1)
 	else:
@@ -68,15 +68,19 @@ def genScenario(plotRange = True):
 	plt.ylabel('y (m)')
 	plt.xlim(-(conf.XSIZE/2+1)+conf.OX, conf.OX+conf.XSIZE/2+1)
 	plt.ylim(-(conf.YSIZE/2+1)+conf.OY, conf.OY+conf.YSIZE/2+1)
+	# 'Start simulation' button
 	button_ax = fig.add_axes([0.37, 0.05, 0.2, 0.06])
 	button = Button(button_ax, 'Start simulation', color='red', hovercolor='green')
+	# Router checkbox
 	router_ax = fig.add_axes([0.86, 0.67, 0.12, 0.2])
 	router_ax.set_axis_off()
 	checkButton = CheckButtons(router_ax, ['Router'], [conf.router])
 	router_ax.set_visible(False)
+	# HopLimit slider
 	slider_ax = fig.add_axes([0.86, 0.42, 0.1, 0.25])
 	slider = Slider(slider_ax, 'HopLimit', 0, 7, conf.hopLimit, valstep=1, orientation="vertical")
 	slider_ax.set_visible(False)
+	# Height textbox
 	height_ax = fig.add_axes([0.89, 0.30, 0.05, 0.04])
 	height_textbox = TextBox(height_ax, 'Height (m)', conf.HM, textalignment='center')
 	height_ax.set_visible(False)
@@ -84,6 +88,7 @@ def genScenario(plotRange = True):
 	textBoxLabel.set_position([0.5, 1.75]) 
 	textBoxLabel.set_verticalalignment('top')
 	textBoxLabel.set_horizontalalignment('center')
+	# Antenna gain textbox
 	gain_ax = fig.add_axes([0.89, 0.19, 0.05, 0.04])
 	gain_textbox = TextBox(gain_ax, 'Antenna \ngain (dBi)', conf.GL, textalignment='center')
 	gain_ax.set_visible(False)
@@ -105,8 +110,10 @@ def genScenario(plotRange = True):
 				circle = plt.Circle((nx, ny), radius=phy.MAXRANGE, color=plt.cm.Set1(i), alpha=0.1)
 				ax.add_patch(circle)
 		if len(nodeTxts) > 0:
+			# Remove last 'Configure node x' text
 			nodeTxts[-1].set_visible(False)
 		else:
+			# After first node is placed, display config options
 			router_ax.set_visible(True)
 			slider_ax.set_visible(True)
 			height_ax.set_visible(True)
@@ -122,6 +129,7 @@ def genScenario(plotRange = True):
 		if (len(nodeX)) < 2:
 			print("Need at least two nodes.")
 			exit(1)
+		# Save last config
 		nodeZ.append(float(height_textbox.text))
 		nodeRouter.append(checkButton.get_status()[0])
 		nodeHopLimit.append(slider.val)
@@ -134,24 +142,27 @@ def genScenario(plotRange = True):
 	def onclick(event):
 		if event.dblclick:
 			if len(nodeX) > 0:
+				# Save config of previous node
 				nodeZ.append(float(height_textbox.text))
 				isRouter = checkButton.get_status()[0]
 				nodeRouter.append(isRouter)
 				nodeHopLimit.append(slider.val)
 				gains.append(float(gain_textbox.text))
+				# Reset config values
 				height_textbox.set_val(conf.HM)
 				if isRouter:
 					checkButton.set_active(0)
 				slider.set_val(conf.hopLimit)
 				gain_textbox.set_val(conf.GL)
-			x = float(event.xdata)
-			y = float(event.ydata)
-			nodeX.append(x)
-			nodeY.append(y)
+			
+			# New node placement
+			nodeX.append(float(event.xdata))
+			nodeY.append(float(event.ydata))
 			plotting()
 
 	cid = fig.canvas.mpl_connect('button_press_event', onclick)
 	plt.show()
+	# Save node configuration in a dictionary
 	nodeDict = {n: {'x': nodeX[n], 'y': nodeY[n], 'z': nodeZ[n], \
 		'isRouter': nodeRouter[n], 'hopLimit':nodeHopLimit[n], \
 		'antennaGain': gains[n]} for n in range(len(nodeX))}
@@ -181,6 +192,7 @@ def findRandomPosition(nodes):
 					break
 				pathLoss = phy.estimatePathLoss(dist, conf.FREQ)
 				rssi = conf.PTX + 2*conf.GL - pathLoss
+				# At least one node should be able to reach it
 				if rssi >= conf.SENSMODEM[conf.MODEM]:
 					foundMax = True
 			if foundMin and foundMax:

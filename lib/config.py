@@ -14,8 +14,7 @@ HM = 1.0  # height of each node in m
 ### Meshtastic specific ###
 hopLimit = 3  # default 3
 router = False  # set role of each node as router (True) or normal client (False) 
-DMs = False  # set True for sending DMs (with random destination), False for broadcasts
-maxRetransmission = 3  # default 3 
+maxRetransmission = 3  # default 3 -- not configurable by Meshtastic
 ### End of Meshtastic specific ###
 
 ### Discrete-event specific ###
@@ -26,6 +25,7 @@ SIMTIME = 200000  # duration of one simulation in ms
 INTERFERENCE_LEVEL = 0.05  # chance that at a given moment there is already a LoRa packet being sent on your channel, 
                            # outside of the Meshtastic traffic. Given in a ratio from 0 to 1.  
 COLLISION_DUE_TO_INTERFERENCE = False
+DMs = False  # Set True for sending DMs (with random destination), False for broadcasts
 # from RadioInterface.cpp RegionInfo regions[]
 regions = { "US": {"freq_start": 902e6, "freq_end": 928e6, "power_limit": 30},
             "EU433": {"freq_start": 433e6, "freq_end": 434e6, "power_limit": 12}, 
