@@ -25,7 +25,7 @@ See [this document](INTERACTIVE_SIM.md) for a usage guide.
 
 It allows for debugging multiple communicating nodes without having real devices. 
 
-https://user-images.githubusercontent.com/78759985/193409669-e8b6be37-6c73-40b3-84a4-8757ab4b7dfd.mp4
+https://user-images.githubusercontent.com/78759985/209952664-1a571fc8-65d1-4277-8516-2822f60a5dd0.mp4
 
 Furthermore, since the simulator has an 'oracle view' of the network, it allows to visualize the route messages take. 
 
