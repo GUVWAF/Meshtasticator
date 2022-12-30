@@ -85,7 +85,7 @@ class MeshNode():
 						break
 					else: 
 						if minRetransmissions > 0:  # generate new packet with same sequence number
-							pNew = MeshPacket(self.nodes, self.nodeid, p.destId, self.nodeid, conf.PACKETLENGTH, p.seq, p.genTime, p.wantAck, False, None)  
+							pNew = MeshPacket(self.nodes, self.nodeid, p.destId, self.nodeid, p.packetLen, p.seq, p.genTime, p.wantAck, False, None)  
 							pNew.retransmissions = minRetransmissions-1
 							verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'wants to retransmit its generated packet to', destId, 'with seq.nr.', p.seq, 'minRetransmissions', minRetransmissions)
 							self.packets.append(pNew)							
@@ -204,7 +204,7 @@ class MeshNode():
         # FloodingRouter: rebroadcasting received message 
 				elif not p.destId == self.nodeid and not ackReceived and not realAckReceived and p.hopLimit > 0:
 					verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'rebroadcasts received packet', p.seq)
-					pNew = MeshPacket(self.nodes, p.origTxNodeId, p.destId, self.nodeid, conf.PACKETLENGTH, p.seq, p.genTime, p.wantAck, False, None) 
+					pNew = MeshPacket(self.nodes, p.origTxNodeId, p.destId, self.nodeid, p.packetLen, p.seq, p.genTime, p.wantAck, False, None) 
 					pNew.hopLimit = p.hopLimit-1
 					self.packets.append(pNew)
 					self.env.process(self.transmit(pNew))

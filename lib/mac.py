@@ -45,7 +45,7 @@ def getTxDelayMsec(node):  # from RadioInterface::getTxDelayMsec
 
 
 def getRetransmissionMsec(node, packet):  # from RadioInterface::getRetransmissionMsec
-    packetAirtime = int(airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], packet.packetlen, conf.BWMODEM[conf.MODEM]))
+    packetAirtime = int(airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], packet.packetLen, conf.BWMODEM[conf.MODEM]))
     channelUtil = node.airUtilization/node.env.now*100 
     CWsize = int(channelUtil*(CWmax - CWmin)/100 + CWmin)
     return 2*packetAirtime + (2**CWsize + 2**(int((CWmax+CWmin)/2))) * slotTime + PROCESSING_TIME_MSEC;

@@ -43,8 +43,8 @@ class MeshPacket():
 			if self.rssiAtN[rx_node.nodeid] >= conf.CADMODEM[conf.MODEM]:
 				self.detectedByN[rx_node.nodeid] = True
 				
-		self.packetlen = plen
-		self.timeOnAir = airtime(self.sf, self.cr, self.packetlen, self.bw)
+		self.packetLen = plen
+		self.timeOnAir = airtime(self.sf, self.cr, self.packetLen, self.bw)
 		self.startTime = 0
 		self.endTime = 0
 
