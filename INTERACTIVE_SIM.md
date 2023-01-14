@@ -10,7 +10,7 @@ Build the Linux native application of Meshtastic-device (firmware), which can be
 - Using PlatformIO, select 'native' and click on 'build'. Locate the generated binary file, which will probably be in *Meshtastic-device/.pio/build/native/*. Either copy the file called 'program' to the directory where you will be running the Python script from, or add the full path as argument after *--p*. For example: ```python3 interactiveSim.py 3 --p /home/User/Meshtastic-device/.pio/build/native/```.
 - For usage with Docker, first build the container using ```docker build -t meshtastic-device .``` when in the *Meshtastic-device* (or *firmware*) directory. Install the Docker Python API with ```pip3 install docker```. Make sure the Docker daemon or Desktop application is running. Then run the interactive simulator with *--d* as argument, e.g.: ```python3 interactiveSim.py 3 --d```.
 
-The interactive simulator can be run as follows: 
+The interactive simulator can then be run as follows: 
 
 ```python3 interactiveSim.py [nrNodes] [--p <full-path-to-program>]```,
 
@@ -18,11 +18,36 @@ where *nrNodes* (optional) is the number of instances you want to launch. Note t
 
 ![](/img/configNode.png)
 
-The nodes first exchange their NodeInfo. Afterwards, you can let them send messages. To specifiy what you want to send, modify the script in the 'try' clause. 
-Depending on the number of nodes, exchanging the NodeInfo might take quite some time. You can also disable these by removing setIntervalFromNow() in the NodeInfoModule (and PositionModule) in the device firmware. This works because the simulator already knows the NodeIDs. 
-Once the nodes are done sending, you can close them by pressing Control+c or just wait for the timeout set at the end of the 'try' clause. Then you will see a plot where you can enter a message ID to plot its route. Hover over an arc to see some information and click to remove the information afterwards. Hovering is sometimes a bit laggy, so you might have to hover over it multiple times.
+When the simulation is started, you can send [commands](#list-of-commands) to let the nodes send messages (or use a [script](#usage-with-script)). Once the nodes are done sending, you can plot the routes of the messages by entering 'plot'. Then you will see a plot where you can enter a message ID to show its route. Hover over an arc to see some information and click to remove the information afterwards. Hovering is sometimes a bit laggy, so you might have to hover over it multiple times.
 
 ![](/img/route_plot2.png)
+
+## List of commands
+- ```broadcast <fromNode> <txt>```  
+  Send a broadcast from node *fromNode* with text *txt*.
+- ```DM <fromNode> <toNode> <txt>```  
+  Send a Direct Message from node *fromNode* to node *toNode* with text *txt*.
+- ```ping <fromNode> <toNode>```
+
+  Send ping from node *fromNode* to node *toNode*.
+- ```nodes <id0> [id1, etc.]```
+
+  Show the node list as seen by node(s) *id0*, *id1*, etc.
+- ```plot```
+
+  Plot the routes of messages sent.
+- ```exit``` 
+
+  Exit the simulator without plotting routes.
+
+## Usage with script
+To predefine what you want to send, you can also modify the script *interactiveSim.py* in the 'try' clause. Then you will have to run the simulator with the '--s' argument, like: ```python3 interactiveSim.py 3 --s```.
+The nodes first exchange their NodeInfo. Afterwards, you can let them send messages. Once the nodes are done sending, you can close them by pressing Control+c or just wait for the timeout set at the end of the 'try' clause. 
+
+## Tips and tricks
+1. Depending on the number of nodes, exchanging the NodeInfo might take quite some time. You can also disable these by removing setIntervalFromNow() in the NodeInfoModule (and PositionModule) in the device firmware. This works because the simulator already knows the NodeIDs. 
+
+2. The simulator can essentially do the same configurations as the Python CLI. If you use ```sim.getNodeById(<id>)``` in *interactiveSim.py*, you can call a function in the Node class of the CLI, e.g. ```.setURL(<'YOUR_URL'>)```.
 
 ## Pathloss model
 The simulator uses a pathloss model to calculate how well a signal will propagate. Note that this is only a rough estimation of the physical environment and will not be 100% accurate, as it depends on a lot of factors. The implemented pathloss models are:

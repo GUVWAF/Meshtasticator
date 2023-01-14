@@ -5,6 +5,7 @@ from matplotlib import patches
 from matplotlib.widgets import TextBox
 import sys
 import time
+import cmd
 from . import config as conf
 from .common import *
 HW_ID_OFFSET = 16
@@ -121,6 +122,7 @@ class interactiveGraph(Graph):
   def plotRoute(self, messageId):
     if self.firstTime: 
       print('Hover over an arc to show some info and click to remove it afterwards.')
+      print('Close the window to exit the simulator.')
     self.firstTime = False
     packets = [p for p in self.packets if p.localId == messageId]
     if len(packets) > 0:
@@ -160,28 +162,26 @@ class interactiveGraph(Graph):
             hopLimit = None
 
           if p.packet["from"] == tx.hwId:
-            if hopLimit == self.defaultHopLimit:
-              if "requestId" in p.packet["decoded"]:
+            if "requestId" in p.packet["decoded"]:
+              if p.packet["priority"] == "ACK":
+                msgType = "Real\/ACK"
+              else:
                 msgType = "Response"
-              else:
-                msgType = "Original\/message"
+            else:
+              msgType = "Original\/message"
+          elif "requestId" in p.packet["decoded"]:
+            if p.packet["decoded"]["simulator"]["portnum"] == "ROUTING_APP":
+              msgType = "Forwarding\/real\/ACK"
             else: 
-              if "requestId" in p.packet["decoded"]:
-                msgType = "Retransmitted\/response"
-              else:
-                msgType = "Retransmitted\/original\/message"
-          elif p.packet["priority"] != "ACK":
+              msgType = "Forwarding\/response"
+          else:
             if int(p.packet['from'])-HW_ID_OFFSET == rx.nodeid:
               msgType = "Implicit\/ACK"
-            else:
+            else: 
               if to == "All":
                 msgType = "Rebroadcast"
               else:
-                msgType = "Forwarding\/packet"
-          elif p.packet["priority"] == "ACK":
-            msgType = "ACK"
-          else: 
-            msgType = "Other"
+                msgType = "Forwarding\/message"
 
           fields = []
           msgTypeField = r"$\bf{"+msgType+"}$"
@@ -240,6 +240,7 @@ class interactiveGraph(Graph):
 
 class interactiveSim(): 
   def __init__(self):
+    self.script = False
     self.messages = []
     self.messageId = -1
     self.nodes = []
@@ -247,7 +248,9 @@ class interactiveSim():
     foundPath = False
     self.docker = False
     for i in range(1, len(sys.argv)):
-      if "--d" in sys.argv[i]:
+      if "--s" in sys.argv[i] or "--script" in sys.argv[i]:
+        self.script = True
+      elif "--d" in sys.argv[i] or "--docker" in sys.argv[i]:
         self.docker = True
       elif not "--p" in sys.argv[i] and not "/" in sys.argv[i]:
         if int(sys.argv[i]) > 10:
@@ -368,10 +371,14 @@ class interactiveSim():
     iface._sendToRadio(toRadio)
 
 
-  def showNodes(self):
-    for n in self.nodes:
-      print('NodeDB as seen by node', n.nodeid)
-      n.iface.showNodes()
+  def showNodes(self, id=None):
+    if id != None: 
+      print('NodeDB as seen by node', id)
+      self.nodes[id].iface.showNodes()
+    else: 
+      for n in self.nodes:
+        print('NodeDB as seen by node', n.nodeid)
+        n.iface.showNodes()
 
 
   def sendBroadcast(self, text, fromNode):
@@ -417,7 +424,8 @@ class interactiveSim():
           mId = self.messageId
     rP = interactivePacket(packet, mId)
     self.messages.append(rP)
-    print("Node", interface.myInfo.my_node_num-HW_ID_OFFSET, "sent", packet["decoded"]["simulator"]["portnum"], "with id", mId, "over the air!")
+    if self.script:
+      print("Node", interface.myInfo.my_node_num-HW_ID_OFFSET, "sent", packet["decoded"]["simulator"]["portnum"], "with id", mId, "over the air!")
     transmitter = next((n for n in self.nodes if n.TCPPort == interface.portNumber), None)
     receivers = [n for n in self.nodes if n.nodeid != transmitter.nodeid]
     rxs, rssis, snrs = self.calcReceivers(transmitter, receivers)
@@ -451,3 +459,100 @@ class interactiveSim():
       n.iface.localNode.exitSimulator()
     if self.docker:
       self.container.stop()
+
+
+class CommandProcessor(cmd.Cmd):
+    def cmdloop(self, sim):
+        self.sim = sim
+        print("Type 'help' to list the available commands for sending messages. Type 'plot' to show the routes or 'exit' to exit the simulator.")
+        return cmd.Cmd.cmdloop(self)
+
+
+    def do_broadcast(self, line):
+        """broadcast <fromNode> <txt>
+        Send a broadcast from node \x1B[3mfromNode\x1B[0m with text \x1B[3mtxt\x1B[0m."""
+        arguments = line.split()
+        if len(arguments) < 2:
+            print('Please use the syntax: "broadcast <fromNode> <txt>"')
+            return False
+        fromNode = int(arguments[0])
+        if fromNode >= len(self.sim.nodes):
+            print('Node ID', fromNode, 'is outside the range of nodes.')
+            return False
+        txt = ""
+        for s in arguments[1:-1]:
+            txt += s+" "
+        txt += arguments[-1]
+        print('Instructing node', fromNode, 'to broadcast '+'"'+txt+'"', '(message ID =', str(self.sim.messageId+1)+')')
+        self.sim.sendBroadcast(txt, fromNode)
+
+
+    def do_DM(self, line):
+        """DM <fromNode> <toNode> <txt>
+        Send a Direct Message from node \x1B[3mfromNode\x1B[0m to node \x1B[3mtoNode\x1B[0m with text \x1B[3mtxt\x1B[0m."""
+        arguments = line.split()
+        if len(arguments) < 3:
+            print('Please use the syntax: "DM <fromNode> <toNode> <txt>"')
+            return False
+        fromNode = int(arguments[0])
+        if fromNode >= len(self.sim.nodes):
+            print('Node ID', fromNode, 'is outside the range of nodes.')
+            return False
+        toNode = int(arguments[1])
+        if toNode >= len(self.sim.nodes):
+            print('Node ID', toNode, 'is outside the range of nodes.')
+            return False
+        txt = ""
+        for s in arguments[2:-1]:
+            txt += s+" "
+        txt += arguments[-1]
+        print('Instructing node', fromNode, 'to DM node', str(toNode)+' "'+txt+'"', '(message ID =', str(self.sim.messageId+1)+')')
+        self.sim.sendDM(txt, fromNode, toNode)
+
+
+    def do_ping(self, line):
+        """ping <fromNode> <toNode>
+        Send ping from node \x1B[3mfromNode\x1B[0m to node \x1B[3mtoNode\x1B[0m."""
+        arguments = line.split()
+        if len(arguments) != 2:
+            print('Please use the syntax: "ping <fromNode> <toNode>"')
+            return False
+        fromNode = int(arguments[0])
+        if fromNode >= len(self.sim.nodes):
+            print('Node ID', fromNode, 'is outside the range of nodes.')
+            return False
+        toNode = int(arguments[1])
+        if toNode >= len(self.sim.nodes):
+            print('Node ID', toNode, 'is outside the range of nodes.')
+            return False
+        print('Instructing node', fromNode, 'to send ping to node', toNode, '(message ID =', str(self.sim.messageId+1)+')')
+        self.sim.sendPing(fromNode, toNode)
+
+
+    def do_nodes(self, line):
+        """nodes <id0> [id1, etc.]
+        Show the node list as seen by node(s) x1B[3mid0\x1B[0m, x1B[3mid1\x1B[0m., etc."""
+        arguments = line.split()
+        if len(arguments) < 1:
+            print('Please use the syntax: "nodes <id0> [id1, etc.]"')
+            return False
+        for n in arguments:
+            if int(n) >= len(self.sim.nodes):
+                print('Node ID', n, 'is outside the range of nodes.')
+                continue
+            self.sim.showNodes(int(n))
+
+
+    def do_plot(self, line):
+        """plot
+        Plot the routes of messages sent."""
+        self.sim.graph.initRoutes(self.sim)
+        return True
+
+
+    def do_exit(self, line):
+        """exit
+        Exit the simulator without plotting routes."""
+        self.sim.closeNodes()
+        return True  
+    
