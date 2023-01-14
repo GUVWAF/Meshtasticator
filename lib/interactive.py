@@ -531,7 +531,7 @@ class CommandProcessor(cmd.Cmd):
 
     def do_nodes(self, line):
         """nodes <id0> [id1, etc.]
-        Show the node list as seen by node(s) x1B[3mid0\x1B[0m, x1B[3mid1\x1B[0m., etc."""
+        Show the node list as seen by node(s) \x1B[3mid0\x1B[0m, \x1B[3mid1\x1B[0m., etc."""
         arguments = line.split()
         if len(arguments) < 1:
             print('Please use the syntax: "nodes <id0> [id1, etc.]"')
