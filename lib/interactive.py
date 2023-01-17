@@ -5,6 +5,7 @@ from matplotlib import patches
 from matplotlib.widgets import TextBox
 import sys
 import time
+import subprocess
 import cmd
 from . import config as conf
 from .common import *
@@ -303,10 +304,22 @@ class interactiveSim():
         print("Docker container with name "+str(self.container.name)+" is started.")
         print("You can check the device logs using 'docker exec -it "+str(self.container.name) +" cat /home/out_x.log', where x is the node number.")
     else: 
+      from shutil import which
+      if which('gnome-terminal') is not None:
+        xterm = False
+      elif which('xterm') is not None: 
+        xterm = True
+      else:
+        print('The interactive simulator on native Linux (without Docker) requires either gnome-terminal or xterm.')
+        exit(1)
       for n in self.nodes:
-        newTerminal = "gnome-terminal --title='Node "+str(n.nodeid)+"' -- "
-        cmdString = newTerminal+pathToProgram+"program -e -d "+os.path.expanduser('~')+"/.portduino/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)
-        os.system(cmdString) 
+        if not xterm:
+          newTerminal = "gnome-terminal --title='Node "+str(n.nodeid)+"' -- "
+        else: 
+          newTerminal = "xterm -title 'Node "+str(n.nodeid)+"' -e "
+        startNode = "program -e -d "+os.path.expanduser('~')+"/.portduino/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)+ " &"
+        cmdString = newTerminal+pathToProgram+startNode
+        os.system(cmdString)  
 
     time.sleep(4)  # Allow instances to start up their TCP service 
     try:
