@@ -5,7 +5,6 @@ from matplotlib import patches
 from matplotlib.widgets import TextBox
 import sys
 import time
-import subprocess
 import cmd
 from . import config as conf
 from .common import *
