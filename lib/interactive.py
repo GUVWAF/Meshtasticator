@@ -3,7 +3,9 @@ from meshtastic import tcp_interface, BROADCAST_NUM, mesh_pb2, \
 from pubsub import pub
 from matplotlib import patches
 from matplotlib.widgets import TextBox
+from matplotlib import pyplot as plt
 import sys
+import os
 import time
 import cmd
 from . import config as conf
@@ -407,6 +409,15 @@ class interactiveSim():
       wantAck=True, wantResponse=True)
 
 
+  def traceRoute(self, fromNode, toNode):
+    r = mesh_pb2.RouteDiscovery()
+    self.nodes[fromNode].iface.sendData(r, destinationId=self.nodes[toNode].hwId, portNum=70, wantResponse=True)
+
+
+  def requestPosition(self, fromNode, toNode):
+    self.nodes[fromNode].iface.sendPosition(destinationId=self.nodes[toNode].hwId, wantResponse=True)
+
+
   def getNodeById(self, id):
     return self.nodes[id].iface.localNode
 
@@ -539,6 +550,45 @@ class CommandProcessor(cmd.Cmd):
             return False
         print('Instructing node', fromNode, 'to send ping to node', toNode, '(message ID =', str(self.sim.messageId+1)+')')
         self.sim.sendPing(fromNode, toNode)
+
+
+    def do_traceroute(self, line):
+        """traceroute <fromNode> <toNode>
+        Send a traceroute request from node \x1B[3mfromNode\x1B[0m to node \x1B[3mtoNode\x1B[0m."""
+        arguments = line.split()
+        if len(arguments) != 2:
+            print('Please use the syntax: "traceroute <fromNode> <toNode>"')
+            return False
+        fromNode = int(arguments[0])
+        if fromNode >= len(self.sim.nodes):
+            print('Node ID', fromNode, 'is outside the range of nodes.')
+            return False
+        toNode = int(arguments[1])
+        if toNode >= len(self.sim.nodes):
+            print('Node ID', toNode, 'is outside the range of nodes.')
+            return False
+        print('Instructing node', fromNode, 'to send traceroute request to node', toNode, '(message ID =', str(self.sim.messageId+1)+')')
+        print('This takes a while, the result will be in the log of node '+str(fromNode)+'.')
+        self.sim.traceRoute(fromNode, toNode)
+
+
+    def do_reqPos(self, line):
+        """reqPos <fromNode> <toNode>
+        Send a position request from node \x1B[3mfromNode\x1B[0m to node \x1B[3mtoNode\x1B[0m."""
+        arguments = line.split()
+        if len(arguments) != 2:
+            print('Please use the syntax: "reqPos <fromNode> <toNode>"')
+            return False
+        fromNode = int(arguments[0])
+        if fromNode >= len(self.sim.nodes):
+            print('Node ID', fromNode, 'is outside the range of nodes.')
+            return False
+        toNode = int(arguments[1])
+        if toNode >= len(self.sim.nodes):
+            print('Node ID', toNode, 'is outside the range of nodes.')
+            return False
+        print('Instructing node', fromNode, 'to send position request to node', toNode, '(message ID =', str(self.sim.messageId+1)+')')
+        self.sim.requestPosition(fromNode, toNode)
 
 
     def do_nodes(self, line):
