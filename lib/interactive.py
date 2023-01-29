@@ -22,12 +22,14 @@ class interactiveNode():
       self.y = nodeConfig['y']
       self.z = nodeConfig['z']
       self.isRouter = nodeConfig['isRouter']
+      self.isRepeater = nodeConfig['isRepeater']
       self.hopLimit = nodeConfig['hopLimit']
       self.antennaGain = nodeConfig['antennaGain']
     else: 
       self.x, self.y = findRandomPosition(nodes)
       self.z = conf.HM
       self.isRouter = conf.router
+      self.isRepeater = False
       self.hopLimit = conf.hopLimit
       self.antennaGain = conf.GL
     self.hwId = hwId
@@ -48,6 +50,12 @@ class interactiveNode():
     if self.isRouter:
       deviceConfig = self.iface.localNode.localConfig.device
       setattr(deviceConfig, 'role', "ROUTER")
+      p = admin_pb2.AdminMessage()
+      p.set_config.device.CopyFrom(deviceConfig)
+      self.iface.localNode._sendAdmin(p)
+    elif self.isRepeater:
+      deviceConfig = self.iface.localNode.localConfig.device
+      setattr(deviceConfig, 'role', 4)
       p = admin_pb2.AdminMessage()
       p.set_config.device.CopyFrom(deviceConfig)
       self.iface.localNode._sendAdmin(p)

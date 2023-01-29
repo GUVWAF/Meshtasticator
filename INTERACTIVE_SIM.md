@@ -14,7 +14,7 @@ The interactive simulator can then be run as follows:
 
 ```python3 interactiveSim.py [nrNodes] [--p <full-path-to-program>]```,
 
-where *nrNodes* (optional) is the number of instances you want to launch. Note that for each instance a terminal and TCP port (starting at 4403) is opened. If the number of nodes is given, they will be randomly placed, otherwise you first have to place the nodes on a plot. After you place a node, you can optionally set the node as Router, change its hopLimit, height (elevation) and antenna gain. These settings will automatically save when you place a new node or when you start the simulation.
+where *nrNodes* (optional) is the number of instances you want to launch. Note that for each instance a terminal and TCP port (starting at 4403) is opened. If the number of nodes is given, they will be randomly placed, otherwise you first have to place the nodes on a plot. After you place a node, you can change its [role](https://meshtastic.org/docs/settings/config/device#role), hopLimit, height (elevation) and antenna gain. These settings will automatically save when you place a new node or when you start the simulation.
 
 ![](/img/configNode.png)
 

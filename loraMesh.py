@@ -19,12 +19,14 @@ class MeshNode():
 			self.y = nodeConfig['y']
 			self.z = nodeConfig['z']
 			self.isRouter = nodeConfig['isRouter']
+			self.isRepeater = nodeConfig['isRepeater']
 			self.hopLimit = nodeConfig['hopLimit']
 			self.antennaGain = nodeConfig['antennaGain']
 		else: 
 			self.x, self.y = findRandomPosition(nodes)
 			self.z = conf.HM
 			self.isRouter = conf.router
+			self.isRepeater = False
 			self.hopLimit = conf.hopLimit
 			self.antennaGain = conf.GL
 		self.messageSeq = messageSeq
@@ -45,7 +47,8 @@ class MeshNode():
 		self.txAirUtilization = 0
 		self.airUtilization = 0
 
-		env.process(self.generateMessage())
+		if not self.isRepeater:  # repeaters don't generate messages themselves
+			env.process(self.generateMessage())
 		env.process(self.receive(self.bc_pipe.get_output_conn()))
 		self.transmitter = simpy.Resource(env, 1)
 
