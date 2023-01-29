@@ -27,6 +27,11 @@ When the simulation is started, you can send [commands](#list-of-commands) to le
   Send a broadcast from node *fromNode* with text *txt*.
 - ```DM <fromNode> <toNode> <txt>```  
   Send a Direct Message from node *fromNode* to node *toNode* with text *txt*.
+- ```traceroute <fromNode> <toNode>```  
+  Send a traceroute request from node *fromNode* to node *toNode*.
+- ```reqPos <fromNode> <toNode>``` 
+
+  Send a position request from node *fromNode* to node *toNode*.
 - ```ping <fromNode> <toNode>```
 
   Send ping from node *fromNode* to node *toNode*.
