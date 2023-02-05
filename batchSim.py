@@ -6,6 +6,7 @@ try:
 	matplotlib.use("TkAgg")
 except ImportError: 
 	print('Tkinter is needed. Install python3-tk with your package manager.')
+	exit(1)
 from matplotlib import pyplot as plt
 import lib.config as conf
 from lib.common import *

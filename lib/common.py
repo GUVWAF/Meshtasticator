@@ -6,6 +6,7 @@ try:
 	matplotlib.use("TkAgg")
 except ImportError: 
 	print('Tkinter is needed. Install python3-tk with your package manager.')
+	exit(1)
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, Slider, RadioButtons, TextBox
 import os

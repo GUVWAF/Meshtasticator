@@ -294,18 +294,22 @@ class interactiveSim():
       self.graph.addNode(node)
 
     if self.docker:
-      import docker
+      try:
+        import docker
+      except ImportError: 
+        print("Please install the Docker SDK for Python with 'pip3 install docker'.")
+        exit(1)
       n0 = self.nodes[0]
       dockerClient = docker.from_env()
       if sys.platform == "darwin":
-        self.container = dockerClient.containers.run("meshtastic-device", \
+        self.container = dockerClient.containers.run("meshtastic/device-simulator", \
           "./meshtasticd_linux_amd64 -e -d /home/node"+str(n0.nodeid)+" -h "+str(n0.hwId)+" -p "+str(n0.TCPPort), \
           ports=dict(zip((str(n.TCPPort)+'/tcp' for n in self.nodes), (n.TCPPort for n in self.nodes))), detach=True, auto_remove=True, user="root")
         for n in self.nodes[1:]:
           self.container.exec_run("./meshtasticd_linux_amd64 -e -d /home/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort), detach=True, user="root") 
         print("Docker container with name "+str(self.container.name)+" is started.")
       else: 
-        self.container = dockerClient.containers.run("meshtastic-device", \
+        self.container = dockerClient.containers.run("meshtastic/device-simulator", \
           "sh -c './meshtasticd_linux_amd64 -e -d /home/node"+str(n0.nodeid)+" -h "+str(n0.hwId)+" -p "+str(n0.TCPPort)+" > /home/out_"+str(n0.nodeid)+".log'", \
           ports=dict(zip((str(n.TCPPort)+'/tcp' for n in self.nodes), (n.TCPPort for n in self.nodes))), detach=True, auto_remove=True, user="root")
         for n in self.nodes[1:]:
