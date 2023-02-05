@@ -2,7 +2,10 @@
 import simpy
 import numpy as np
 import matplotlib
-matplotlib.use("TkAgg")
+try:
+	matplotlib.use("TkAgg")
+except ImportError: 
+	print('Tkinter is needed. Install python3-tk with your package manager.')
 from matplotlib import pyplot as plt
 import lib.config as conf
 from lib.common import *

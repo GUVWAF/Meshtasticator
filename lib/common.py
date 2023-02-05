@@ -2,7 +2,10 @@
 from . import config as conf
 from . import phy 
 import matplotlib
-matplotlib.use("TkAgg")
+try:
+	matplotlib.use("TkAgg")
+except ImportError: 
+	print('Tkinter is needed. Install python3-tk with your package manager.')
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, Slider, RadioButtons, TextBox
 import os

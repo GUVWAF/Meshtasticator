@@ -4,7 +4,7 @@ The Python script *interactiveSim.py* uses the [Linux native application of Mesh
 
 ## Usage
 Please `git clone` or download this repository, navigate to the Meshtasticator folder (optionally create a virtual environment) and install the necessary requirements using: 
-```pip install -r requirements.txt```. On a Mac, you might need python-tk as well (```brew install python-tk```). 
+```pip install -r requirements.txt```.
 
 Build the Linux native application of Meshtastic-device (firmware), which can be done on your Linux PC using [PlatformIO](https://meshtastic.org/docs/development/firmware/build) or using [Docker](https://meshtastic.org/docs/software/linux-native#usage-with-docker). 
 - Using PlatformIO, select 'native' and click on 'build'. Locate the generated binary file, which will probably be in *Meshtastic-device/.pio/build/native/*. Either copy the file called 'program' to the directory where you will be running the Python script from, or add the full path as argument after *--p*. For example: ```python3 interactiveSim.py 3 --p /home/User/Meshtastic-device/.pio/build/native/```.

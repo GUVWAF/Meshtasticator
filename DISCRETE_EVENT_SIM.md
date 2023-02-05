@@ -3,7 +3,7 @@ The discrete-event simulator mimics the radio section of the device software. It
 
 ## Usage
 Please `git clone` or download this repository, navigate to the Meshtasticator folder (optionally create a virtual environment) and install the necessary requirements using: 
-```pip install -r requirements.txt```. On a Mac, you might need python-tk as well (```brew install python-tk```).
+```pip install -r requirements.txt```.
 
 To start one simulation with the default configurations, run:
 
