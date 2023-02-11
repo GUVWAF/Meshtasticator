@@ -50,7 +50,7 @@ To predefine what you want to send, you can also modify the script *interactiveS
 The nodes first exchange their NodeInfo. Afterwards, you can let them send messages. Once the nodes are done sending, you can close them by pressing Control+c or just wait for the timeout set at the end of the 'try' clause. 
 
 ## Tips and tricks
-1. Depending on the number of nodes, exchanging the NodeInfo might take quite some time. You can also disable these by removing setIntervalFromNow() in the NodeInfoModule (and PositionModule) in the device firmware. This works because the simulator already knows the NodeIDs. 
+1. Depending on the number of nodes, exchanging the NodeInfo might take quite some time. You can also disable these by removing ```new NodeInfoModule()``` (and other modules) in *src/modules/Modules.cpp* in the device firmware. This works because the simulator already knows the NodeIDs. 
 
 2. The simulator can essentially do the same configurations as the Python CLI. If you use ```sim.getNodeById(<id>)``` in *interactiveSim.py*, you can call a function in the Node class of the CLI, e.g. ```.setURL(<'YOUR_URL'>)```.
 
