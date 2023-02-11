@@ -4,6 +4,7 @@ from pubsub import pub
 from matplotlib import patches
 from matplotlib.widgets import TextBox
 from matplotlib import pyplot as plt
+import google.protobuf.json_format as proto
 import sys
 import os
 import time
@@ -34,6 +35,9 @@ class interactiveNode():
       self.antennaGain = conf.GL
     self.hwId = hwId
     self.TCPPort = TCPPort 
+    self.timestamps = []
+    self.channelUtilization = []
+    self.airUtilTx = []
 
 
   def addInterface(self, iface):
@@ -241,11 +245,31 @@ class interactiveGraph(Graph):
         self.fig.canvas.draw_idle()
 
   def onClose(self, event):
+    plt.close('all')
     self.sim.closeNodes()
 
   def submit(self, val):
     messageId = int(val)
     self.plotRoute(messageId)
+
+  def plotMetrics(self, nodes):
+    if any(len(n.timestamps) > 1 for n in nodes):
+      plt.figure()
+      for n in nodes:
+        if len(n.timestamps) > 0:
+          initTime = n.timestamps[0]
+          plt.plot([t-initTime for t in n.timestamps], n.channelUtilization, label=str(n.nodeid))
+      plt.ylabel('Channel utilization (%)')
+      plt.xlabel('Time (s)')
+      plt.legend(title='Node ID')
+      plt.figure()
+      for n in nodes:
+        if len(n.timestamps) > 0:
+          initTime = n.timestamps[0]
+          plt.plot([t-initTime for t in n.timestamps], n.airUtilTx, label=str(n.nodeid))
+      plt.ylabel('Hourly Tx air utilization (%)')
+      plt.xlabel('Time (s)')
+      plt.legend(title='Node ID')
 
 
 class interactiveSim(): 
@@ -340,6 +364,7 @@ class interactiveSim():
         iface = tcp_interface.TCPInterface(hostname="localhost", portNumber=n.TCPPort)
         n.addInterface(iface)
       pub.subscribe(self.onReceive, "meshtastic.receive.simulator")
+      pub.subscribe(self.onReceiveMetrics, "meshtastic.receive.telemetry")
       for n in self.nodes:
         n.setConfig()
     except(Exception) as ex:
@@ -469,6 +494,31 @@ class interactiveSim():
     for i,r in enumerate(rxs):
       self.forwardPacket(r.iface, packet, rssis[i], snrs[i])
     self.graph.packets.append(rP)
+
+
+  def onReceiveMetrics(self, interface, packet):
+    fromNode = self.nodes[int(packet["from"])-HW_ID_OFFSET]
+    data = packet["decoded"]["payload"]
+    if getattr(data, "SerializeToString", None):
+      data = data.SerializeToString()
+    telemetryPacket = telemetry_pb2.Telemetry()
+    telemetryPacket.ParseFromString(data)
+    channelUtilization = 0
+    airUtilTx = 0
+    telemetryDict = proto.MessageToDict(telemetryPacket)
+    if 'deviceMetrics' in telemetryDict:
+      deviceMetrics = telemetryDict['deviceMetrics']
+      if 'time' in telemetryDict:
+        timestamp = int(telemetryDict['time'])
+        # Check whether it is not a duplicate
+        if len(fromNode.timestamps) == 0 or timestamp > fromNode.timestamps[-1]:
+          fromNode.timestamps.append(timestamp)
+          if 'channelUtilization' in deviceMetrics:
+            channelUtilization = float(deviceMetrics['channelUtilization'])
+          fromNode.channelUtilization.append(channelUtilization)
+          if 'airUtilTx' in deviceMetrics:
+            airUtilTx = float(deviceMetrics['airUtilTx'])
+          fromNode.airUtilTx.append(airUtilTx)
 
 
   def calcReceivers(self, tx, receivers): 
@@ -619,7 +669,8 @@ class CommandProcessor(cmd.Cmd):
 
     def do_plot(self, line):
         """plot
-        Plot the routes of messages sent."""
+        Plot the routes of messages sent and airtime statistics.."""
+        self.sim.graph.plotMetrics(self.sim.nodes)
         self.sim.graph.initRoutes(self.sim)
         return True
 

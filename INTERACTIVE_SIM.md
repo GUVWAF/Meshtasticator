@@ -18,7 +18,7 @@ where *nrNodes* (optional) is the number of instances you want to launch. Note t
 
 ![](/img/configNode.png)
 
-When the simulation is started, you can send [commands](#list-of-commands) to let the nodes send messages (or use a [script](#usage-with-script)). Once the nodes are done sending, you can plot the routes of the messages by entering 'plot'. Then you will see a plot where you can enter a message ID to show its route. Hover over an arc to see some information and click to remove the information afterwards. Hovering is sometimes a bit laggy, so you might have to hover over it multiple times.
+When the simulation is started, you can send [commands](#list-of-commands) to let the nodes send messages (or use a [script](#usage-with-script)). Once the nodes are done sending, you can plot the routes of the messages and airtime statistics by entering 'plot'. Then you will see a plot where you can enter a message ID to show its route. Hover over an arc to see some information and click to remove the information afterwards. Hovering is sometimes a bit laggy, so you might have to hover over it multiple times. It will also plot two graphs showing the channel utilization (recorded with a one-minute window) and transmitting airtime utilization (hourly window) for every node.
 
 ![](/img/route_plot2.png)
 
@@ -40,7 +40,7 @@ When the simulation is started, you can send [commands](#list-of-commands) to le
   Show the node list as seen by node(s) *id0*, *id1*, etc.
 - ```plot```
 
-  Plot the routes of messages sent.
+  Plot the routes of messages sent and airtime statistics.
 - ```exit``` 
 
   Exit the simulator without plotting routes.
