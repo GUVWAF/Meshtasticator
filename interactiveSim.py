@@ -40,8 +40,10 @@ if sim.script:  # Use '--s' as argument if you want to specify what you want to 
         # sim.requestPosition(fromNode, toNode)
 
         time.sleep(15) # Wait until message are sent
+        sim.graph.plotMetrics(sim.nodes) # Plot airtime metrics
         sim.graph.initRoutes(sim)  # Visualize the route of messages sent 
     except KeyboardInterrupt:
+        sim.graph.plotMetrics(sim.nodes)
         sim.graph.initRoutes(sim)
 else:  # Normal usage with commands
     CommandProcessor().cmdloop(sim)
