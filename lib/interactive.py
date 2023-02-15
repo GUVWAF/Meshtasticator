@@ -263,7 +263,7 @@ class interactiveGraph(Graph):
       for n in nodes:
         if len(n.timestamps) > 0:
           initTime = n.timestamps[0]
-          plt.plot([t-initTime for t in n.timestamps], n.channelUtilization, label=str(n.nodeid))
+          plt.plot([t-initTime for t in n.timestamps], n.channelUtilization, label=str(n.nodeid), marker=".")
       plt.ylabel('Channel utilization (%)')
       plt.xlabel('Time (s)')
       plt.legend(title='Node ID')
@@ -271,7 +271,7 @@ class interactiveGraph(Graph):
       for n in nodes:
         if len(n.timestamps) > 0:
           initTime = n.timestamps[0]
-          plt.plot([t-initTime for t in n.timestamps], n.airUtilTx, label=str(n.nodeid))
+          plt.plot([t-initTime for t in n.timestamps], n.airUtilTx, label=str(n.nodeid), marker=".")
       plt.ylabel('Hourly Tx air utilization (%)')
       plt.xlabel('Time (s)')
       plt.legend(title='Node ID')
