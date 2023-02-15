@@ -45,6 +45,11 @@ class interactiveNode():
 
   
   def setConfig(self):
+    # Set a long and short name
+    p = admin_pb2.AdminMessage()
+    p.set_owner.long_name = "Node "+str(self.nodeid)
+    p.set_owner.short_name = str(self.nodeid)
+    self.iface.localNode._sendAdmin(p)
     if self.hopLimit != 3:
       loraConfig = self.iface.localNode.localConfig.lora
       setattr(self.iface.localNode.localConfig.lora, 'hop_limit', self.hopLimit)
