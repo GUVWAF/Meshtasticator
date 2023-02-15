@@ -52,7 +52,13 @@ The nodes first exchange their NodeInfo. Afterwards, you can let them send messa
 ## Tips and tricks
 1. Depending on the number of nodes, exchanging the NodeInfo might take quite some time. You can also disable these by removing ```new NodeInfoModule()``` (and other modules) in *src/modules/Modules.cpp* in the device firmware. This works because the simulator already knows the NodeIDs. 
 
-2. The simulator can essentially do the same configurations as the Python CLI. If you use ```sim.getNodeById(<id>)``` in *interactiveSim.py*, you can call a function in the Node class of the CLI, e.g. ```.setURL(<'YOUR_URL'>)```.
+2. If you placed the nodes yourself, after a simulation the number of nodes, their coordinates and configuration are automatically saved and you can rerun the scenario with: 
+
+  ```python3 interactiveSim.py --from-file```
+
+  If you want to change any of the configurations, adapt the file *out/nodeConfig.yaml* before running it with the above command.
+
+3. The simulator can essentially do the same configurations as the Python CLI. If you use ```sim.getNodeById(<id>)``` in *interactiveSim.py*, you can call a function in the Node class of the CLI, e.g. ```.setURL(<'YOUR_URL'>)```.
 
 ## Pathloss model
 The simulator uses a pathloss model to calculate how well a signal will propagate. Note that this is only a rough estimation of the physical environment and will not be 100% accurate, as it depends on a lot of factors. The implemented pathloss models are:

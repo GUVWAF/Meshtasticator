@@ -291,6 +291,11 @@ class interactiveSim():
         self.script = True
       elif "--d" in sys.argv[i] or "--docker" in sys.argv[i]:
         self.docker = True
+      elif "--from-file" in sys.argv[i]:
+        foundNodes = True
+        with open(os.path.join("out", "nodeConfig.yaml"), 'r') as file: 
+          config = yaml.load(file, Loader=yaml.FullLoader)
+        conf.NR_NODES = len(config.keys())
       elif not "--p" in sys.argv[i] and not "/" in sys.argv[i]:
         if int(sys.argv[i]) > 10:
           print("Not sure if you want to start more than 10 terminals. Exiting.")
