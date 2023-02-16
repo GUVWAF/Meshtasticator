@@ -2,8 +2,8 @@ import numpy as np
 
 MODEL = 5  # Pathloss model to use (see README)
 
-XSIZE = 3000  # horizontal size of the area to simulate in m 
-YSIZE = 3000  # vertical size of the area to simulate in m
+XSIZE = 7500  # horizontal size of the area to simulate in m 
+YSIZE = 7500  # vertical size of the area to simulate in m
 OX = 0.0  # origin x-coordinate
 OY = 0.0  # origin y-coordinate
 MINDIST = 10  # minimum distance between each node in the area in m
