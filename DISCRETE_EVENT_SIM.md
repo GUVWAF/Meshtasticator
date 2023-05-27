@@ -1,5 +1,5 @@
 # Discrete-event simulator 
-The discrete-event simulator mimics the radio section of the device software. It is currently based on Meshtastic 2.0. 
+The discrete-event simulator mimics the radio section of the device software. It is currently based on Meshtastic 2.1. 
 
 ## Usage
 Please `git clone` or download this repository, navigate to the Meshtasticator folder (optionally create a virtual environment) and install the necessary requirements using: 
@@ -33,15 +33,16 @@ To simulate different parameters, you will have to change the *batchSim.py* scri
 Here we list some of the configurations, which you can change to model your scenario in */lib/config.py*. These apply to all nodes, except those that you configure per node when using the plot.
 ### Modem
 The LoRa modem ([see Meshtastic radio settings](https://meshtastic.org/docs/overview/radio-settings#predefined-channels)) that is used, as defined below:
-|Modem  | Name | Bandwidth (kHz) | Coding rate | Spreading Factor | Data rate (bps)
+|Modem  | Name | Bandwidth (kHz) | Coding rate | Spreading Factor | Data rate (kbps)
 |--|--|--|--|--|--| 
-| 0 |Short Fast|250|4/8|7|3865
-| 1 |Short Slow|250|4/8|8|2193
-| 2 |Mid Fast|250|4/8|9|1219
-| 3 |Mid Slow|250|4/8|10|659.3
-| 4 |Long Fast|250|4/8|11|358.7
-| 5 |Long Slow|125|4/8|12|98.34
-| 6 |Very Long Slow|31.25|4/8|12|24.59
+| 0 |Short Fast|250|4/8|7|6.8
+| 1 |Short Slow|250|4/8|8|3.9
+| 2 |Mid Fast|250|4/8|9|2.2
+| 3 |Mid Slow|250|4/8|10|1.2
+| 4 |Long Fast|250|4/8|11|0.67
+| 5 |Long Moderate|125|4/8|11|0.335
+| 6 |Long Slow|125|4/8|12|0.18
+| 7 |Very Long Slow|62.5|4/8|12|0.09
 
 ### Period
 Mean period (in ms) with which the nodes generate a new message following an exponential distribution. E.g. if you set it to 300s, each node will generate a message on average once every five minutes. 

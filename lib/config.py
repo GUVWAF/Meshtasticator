@@ -18,7 +18,7 @@ maxRetransmission = 3  # default 3 -- not configurable by Meshtastic
 ### End of Meshtastic specific ###
 
 ### Discrete-event specific ###
-MODEM = 4  # LoRa modem to use: 0 = ShortFast, 1 = Short Slow, ... 6 = Very Long Slow
+MODEM = 4  # LoRa modem to use: 0 = ShortFast, 1 = Short Slow, ... 7 = Very Long Slow (default 4 is LongFast)
 PERIOD = 100000  # mean period of generating a new message with exponential distribution in ms
 PACKETLENGTH = 40  # payload in bytes  
 SIMTIME = 200000  # duration of one simulation in ms 
@@ -37,13 +37,13 @@ CHANNEL_NUM = 27  # Channel number
 ### PHY parameters (normally no change needed) ###
 PTX = REGION["power_limit"]
 # from RadioInterface::applyModemConfig() 
-BWMODEM = np.array([250e3, 250e3, 250e3, 250e3, 250e3, 125e3, 31.25e3])  # bandwidth
-SFMODEM = np.array([7, 8, 9, 10, 11, 12, 12]) # spreading factor
-CRMODEM = np.array([8, 8, 8, 8, 8, 8, 8]) # coding rate
-# minimum sensitivity from [2], Table 3 (Very Long Slow is an extrapolation)
-SENSMODEM = np.array([-124.25, -126.75, -128.25, -130.25, -132.75, -133.25, -139.25])
-# minimum received power for CAD (estimated based on SX126x datasheet)
-CADMODEM = np.array([-125, -128, -133, -134, -139, -139, -144])
+BWMODEM = np.array([250e3, 250e3, 250e3, 250e3, 250e3, 125e3, 125e3, 62.5e3])  # bandwidth
+SFMODEM = np.array([7, 8, 9, 10, 11, 11, 12, 12]) # spreading factor
+CRMODEM = np.array([8, 8, 8, 8, 8, 8, 8, 8]) # coding rate
+# minimum sensitivity from https://www.rfwireless-world.com/calculators/LoRa-Sensitivity-Calculator.html 
+SENSMODEM = np.array([-121.5, -124.0, -126.5, -129.0, -131.5, -134.5, -137.0, -140.0])
+# minimum received power for CAD (3dB less than sensitivity)
+CADMODEM = np.array([-124.5, -127.0, -129.5, -132.0, -134.5, -137.5, -140.0, -143.0])
 FREQ = REGION["freq_start"]+BWMODEM[MODEM]*CHANNEL_NUM
 HEADERLENGTH = 16  # number of Meshtastic header bytes 
 ACKLENGTH = 2  # ACK payload in bytes
@@ -51,7 +51,7 @@ NOISE_LEVEL = -119.25  # some noise level in dB, based on SNR_MIN and minimum re
 GAMMA = 2.08  # PHY parameter
 D0 = 40.0  # PHY parameter
 LPLD0 = 127.41  # PHY parameter
-NPREAM = 32   # number of preamble symbols from RadioInterface.h 
+NPREAM = 16   # number of preamble symbols from RadioInterface.h 
 ### End of PHY parameters ###
 
 # Misc
