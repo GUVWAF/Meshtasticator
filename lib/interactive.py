@@ -680,7 +680,7 @@ class CommandProcessor(cmd.Cmd):
 
     def do_remove(self, line):
         """remove <id>
-        Remove node \x1B[3mid\x1B[0m."""
+        Remove node \x1B[3mid\x1B[0m from the current simulation."""
         arguments = line.split()
         if len(arguments) < 1:
             print('Please use the syntax: "remove <id>"')

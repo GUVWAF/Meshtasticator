@@ -35,6 +35,9 @@ When the simulation is started, you can send [commands](#list-of-commands) to le
 - ```ping <fromNode> <toNode>```
 
   Send ping from node *fromNode* to node *toNode*.
+- ```remove <id>```
+
+  Remove node *id* from the current simulation.
 - ```nodes <id0> [id1, etc.]```
 
   Show the node list as seen by node(s) *id0*, *id1*, etc.
