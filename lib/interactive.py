@@ -678,6 +678,18 @@ class CommandProcessor(cmd.Cmd):
                 continue
             self.sim.showNodes(int(n))
 
+    def do_remove(self, line):
+        """remove <id>
+        Remove node \x1B[3mid\x1B[0m."""
+        arguments = line.split()
+        if len(arguments) < 1:
+            print('Please use the syntax: "remove <id>"')
+            return False
+        nodeId = (int(arguments[0]))
+        self.sim.getNodeById(nodeId).exitSimulator()
+        self.sim.nodes[nodeId].iface.close()
+        del self.sim.nodes[nodeId]
+
 
     def do_plot(self, line):
         """plot
