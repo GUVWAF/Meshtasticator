@@ -251,7 +251,6 @@ class interactiveGraph(Graph):
 
   def onClose(self, event):
     plt.close('all')
-    self.sim.closeNodes()
 
   def submit(self, val):
     messageId = int(val)
@@ -407,6 +406,8 @@ class interactiveSim():
       meshPacket = telemetry_pb2.Telemetry()
     elif packet["decoded"]["portnum"] == "REMOTE_HARDWARE_APP":
       meshPacket = remote_hardware_pb2.HardwareMessage()
+    elif packet["decoded"]["portnum"] == "NEIGHBORINFO_APP":
+      meshPacket = mesh_pb2.NeighborInfo() 
     else:
       meshPacket = mesh_pb2.MeshPacket()
 
@@ -552,6 +553,7 @@ class interactiveSim():
     pub.unsubAll()
     for n in self.nodes:
       n.iface.localNode.exitSimulator()
+      n.iface.close()
     if self.docker:
       self.container.stop()
 
