@@ -496,7 +496,8 @@ class interactiveSim():
     iface._sendToRadio(toRadio)
 
   def copyPacket(self, packet):
-    print(packet)
+    # print(packet)
+    time.sleep(0.01)
     try:
       if 'simulator' in packet or packet["decoded"]["portnum"] == "SIMULATOR_APP":
         return None
