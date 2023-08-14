@@ -63,6 +63,7 @@ def genScenario():
 	nodeHopLimit = []
 	nodeTxts = []
 	gains = []
+	neighborInfo = []
 
 	fig = plt.figure()
 	ax = fig.add_subplot(111)
@@ -140,6 +141,7 @@ def genScenario():
 		nodeRepeater.append(roleButton.value_selected == 'Repeater')
 		nodeHopLimit.append(slider.val)
 		gains.append(float(gain_textbox.text))
+		neighborInfo.append("True")
 		fig.canvas.mpl_disconnect(cid)
 		plt.close()
 	button.on_clicked(submit)
@@ -154,6 +156,7 @@ def genScenario():
 				nodeRepeater.append(roleButton.value_selected == 'Repeater')
 				nodeHopLimit.append(slider.val)
 				gains.append(float(gain_textbox.text))
+				neighborInfo.append("True")
 				# Reset config values
 				roleButton.set_active(1 if conf.router else 0)
 				height_textbox.set_val(conf.HM)
@@ -171,7 +174,7 @@ def genScenario():
 	nodeDict = {n: {'x': nodeX[n], 'y': nodeY[n], 'z': nodeZ[n], \
 		'isRouter': nodeRouter[n], 'isRepeater': nodeRepeater[n], \
 		'hopLimit':nodeHopLimit[n], \
-		'antennaGain': gains[n]} for n in range(len(nodeX))}
+		'antennaGain': gains[n], 'neighborInfo': neighborInfo[n]} for n in range(len(nodeX))}
 	if save:
 		if not os.path.isdir("out"):
 			os.mkdir("out")

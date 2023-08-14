@@ -9,11 +9,14 @@ import sys
 import os
 import time
 import cmd
+import socket
+import threading
 from . import config as conf
 from .common import *
 HW_ID_OFFSET = 16
 TCP_PORT_OFFSET = 4403
-
+TCP_PORT_CLIENT = 4402
+MAX_TO_FROM_RADIO_SIZE = 512
 
 class interactiveNode(): 
   def __init__(self, nodes, nodeId, hwId, TCPPort, nodeConfig):
@@ -26,6 +29,7 @@ class interactiveNode():
       self.isRepeater = nodeConfig['isRepeater']
       self.hopLimit = nodeConfig['hopLimit']
       self.antennaGain = nodeConfig['antennaGain']
+      self.neighborInfo = nodeConfig['neighborInfo']
     else: 
       self.x, self.y = findRandomPosition(nodes)
       self.z = conf.HM
@@ -33,6 +37,8 @@ class interactiveNode():
       self.isRepeater = False
       self.hopLimit = conf.hopLimit
       self.antennaGain = conf.GL
+      self.neighborInfo = True
+    self.iface = None
     self.hwId = hwId
     self.TCPPort = TCPPort 
     self.timestamps = []
@@ -68,6 +74,20 @@ class interactiveNode():
       p = admin_pb2.AdminMessage()
       p.set_config.device.CopyFrom(deviceConfig)
       self.iface.localNode._sendAdmin(p)
+    elif self.neighborInfo:
+      moduleConfig = self.iface.localNode.moduleConfig.neighbor_info
+      setattr(moduleConfig, 'enabled', 1)
+      setattr(moduleConfig, 'update_interval', 30)
+      p = admin_pb2.AdminMessage()
+      p.set_module_config.neighbor_info.CopyFrom(moduleConfig)
+      self.iface.localNode._sendAdmin(p)
+    
+    base_lat = 44
+    base_lon = -105
+    conv_factor = 0.0001 
+    lat = base_lat + (self.y * conv_factor)
+    lon = base_lon + (self.x * conv_factor)
+    self.iface.sendPosition(lat, lon, 0)
 
 
   def addAdminChannel(self):
@@ -285,6 +305,14 @@ class interactiveSim():
     foundNodes = False
     foundPath = False
     self.docker = False
+    self.eraseFlash = False
+    self.forwardToClient = False
+    self.clientConnected = False
+    self.forwardSocket = None
+    self.clientSocket = None
+    self.nodeThread = None
+    self.clientThread = None
+    self.wantExit = False
     for i in range(1, len(sys.argv)):
       if "--s" in sys.argv[i] or "--script" in sys.argv[i]:
         self.script = True
@@ -295,6 +323,10 @@ class interactiveSim():
         with open(os.path.join("out", "nodeConfig.yaml"), 'r') as file: 
           config = yaml.load(file, Loader=yaml.FullLoader)
         conf.NR_NODES = len(config.keys())
+      elif "--e" in sys.argv[i] or "--erase" in sys.argv[i]:
+        self.eraseFlash = True
+      elif sys.argv[i] == "--f":
+        self.forwardToClient = True
       elif not "--p" in sys.argv[i] and not "/" in sys.argv[i]:
         if int(sys.argv[i]) > 10:
           print("Not sure if you want to start more than 10 terminals. Exiting.")
@@ -334,19 +366,22 @@ class interactiveSim():
         exit(1)
       n0 = self.nodes[0]
       dockerClient = docker.from_env()
+      startNode = "./meshtasticd_linux_amd64"
+      if self.eraseFlash:
+        startNode += " -e "
       if sys.platform == "darwin":
         self.container = dockerClient.containers.run("meshtastic/device-simulator", \
-          "./meshtasticd_linux_amd64 -e -d /home/node"+str(n0.nodeid)+" -h "+str(n0.hwId)+" -p "+str(n0.TCPPort), \
+          startNode + "-d /home/node"+str(n0.nodeid)+" -h "+str(n0.hwId)+" -p "+str(n0.TCPPort), \
           ports=dict(zip((str(n.TCPPort)+'/tcp' for n in self.nodes), (n.TCPPort for n in self.nodes))), detach=True, auto_remove=True, user="root")
         for n in self.nodes[1:]:
           self.container.exec_run("./meshtasticd_linux_amd64 -e -d /home/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort), detach=True, user="root") 
         print("Docker container with name "+str(self.container.name)+" is started.")
       else: 
         self.container = dockerClient.containers.run("meshtastic/device-simulator", \
-          "sh -c './meshtasticd_linux_amd64 -e -d /home/node"+str(n0.nodeid)+" -h "+str(n0.hwId)+" -p "+str(n0.TCPPort)+" > /home/out_"+str(n0.nodeid)+".log'", \
+          "sh -c '" + startNode + "-d /home/node"+str(n0.nodeid)+" -h "+str(n0.hwId)+" -p "+str(n0.TCPPort)+" > /home/out_"+str(n0.nodeid)+".log'", \
           ports=dict(zip((str(n.TCPPort)+'/tcp' for n in self.nodes), (n.TCPPort for n in self.nodes))), detach=True, auto_remove=True, user="root")
         for n in self.nodes[1:]:
-          self.container.exec_run("sh -c './meshtasticd_linux_amd64 -e -d /home/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)+" > /home/out_"+str(n.nodeid)+".log'", detach=True, user="root") 
+          self.container.exec_run("sh -c '" + startNode + "-d /home/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)+" > /home/out_"+str(n.nodeid)+".log'", detach=True, user="root") 
         print("Docker container with name "+str(self.container.name)+" is started.")
         print("You can check the device logs using 'docker exec -it "+str(self.container.name) +" cat /home/out_x.log', where x is the node number.")
     else: 
@@ -358,22 +393,51 @@ class interactiveSim():
       else:
         print('The interactive simulator on native Linux (without Docker) requires either gnome-terminal or xterm.')
         exit(1)
-      for n in self.nodes:
+      for n in self.nodes: # [1:]
         if not xterm:
           newTerminal = "gnome-terminal --title='Node "+str(n.nodeid)+"' -- "
         else: 
           newTerminal = "xterm -title 'Node "+str(n.nodeid)+"' -e "
-        startNode = "program -e -d "+os.path.expanduser('~')+"/.portduino/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)+ " &"
+        startNode = "program -d "+os.path.expanduser('~')+"/.portduino/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)
+        if self.eraseFlash:
+          startNode += " -e &"
+        else:
+          startNode += " &"
         cmdString = newTerminal+pathToProgram+startNode
         os.system(cmdString)  
 
-    time.sleep(4)  # Allow instances to start up their TCP service 
+    if self.forwardToClient:
+      print("Please connect with the client to TCP port", TCP_PORT_CLIENT, "...")
+      self.forwardSocket = socket.socket()
+      self.forwardSocket.bind(('', TCP_PORT_CLIENT))
+      self.forwardSocket.listen()
+      (clientSocket, _) = self.forwardSocket.accept()
+      self.clientSocket = clientSocket
+      iface0 = tcp_interface.TCPInterface(hostname="localhost", portNumber=self.nodes[0].TCPPort, connectNow=False)
+      self.nodes[0].addInterface(iface0)
+      iface0.myConnect()  # setup socket
+      self.nodeThread = threading.Thread(target=self.nodeReader, args=(), daemon=True)
+      self.clientThread = threading.Thread(target=self.clientReader, args=(), daemon=True)
+      self.nodeThread.start()
+      self.clientThread.start()
+      start_idx = 1
+    else:
+      start_idx = 0
+      time.sleep(4)  # Allow instances to start up their TCP service 
+
     try:
-      for n in self.nodes:
+      for n in self.nodes[start_idx:]:
         iface = tcp_interface.TCPInterface(hostname="localhost", portNumber=n.TCPPort)
         n.addInterface(iface)
+      if self.forwardToClient:
+        time.sleep(2)
+        self.clientConnected = True
+        iface0.localNode.nodeNum = self.nodes[0].hwId
+        iface0.connect() # real connection now
       pub.subscribe(self.onReceive, "meshtastic.receive.simulator")
       pub.subscribe(self.onReceiveMetrics, "meshtastic.receive.telemetry")
+      if self.forwardToClient:
+        pub.subscribe(self.onReceiveAll, "meshtastic.receive")
       for n in self.nodes:
         n.setConfig()
     except(Exception) as ex:
@@ -412,7 +476,7 @@ class interactiveSim():
       meshPacket = mesh_pb2.MeshPacket()
 
     meshPacket.decoded.payload = data
-    meshPacket.decoded.portnum = 69
+    meshPacket.decoded.portnum = portnums_pb2.SIMULATOR_APP
     meshPacket.to = packet["to"]
     setattr(meshPacket, "from", packet["from"])
     meshPacket.id = packet["id"]
@@ -431,6 +495,37 @@ class interactiveSim():
     toRadio = mesh_pb2.ToRadio()
     toRadio.packet.CopyFrom(meshPacket)
     iface._sendToRadio(toRadio)
+
+  def copyPacket(self, packet):
+    try:
+      if 'simulator' in packet or packet["decoded"]["portnum"] == "SIMULATOR_APP":
+        return None
+
+      data = packet["decoded"]["payload"]
+      if getattr(data, "SerializeToString", None):
+        data = data.SerializeToString()
+
+      meshPacket = mesh_pb2.MeshPacket()
+      meshPacket.decoded.payload = data
+      meshPacket.decoded.portnum = packet["decoded"]["portnum"]
+      meshPacket.to = packet["to"]
+      setattr(meshPacket, "from", packet["from"])
+      meshPacket.id = packet["id"]
+      if "wantAck" in packet:
+        meshPacket.want_ack = packet["wantAck"]
+      if "hopLimit" in packet:
+        meshPacket.hop_limit = packet["hopLimit"]
+      if "requestId" in packet["decoded"]:
+        meshPacket.decoded.request_id = packet["decoded"]["requestId"]
+      if "wantResponse" in packet["decoded"]:
+        meshPacket.decoded.want_response = packet["decoded"]["wantResponse"]
+      if "channel" in packet:
+        meshPacket.channel = int(packet["channel"])
+      fromRadio = mesh_pb2.FromRadio()
+      fromRadio.packet.CopyFrom(meshPacket)
+      return fromRadio
+    except Exception:
+      return None
 
 
   def showNodes(self, id=None):
@@ -495,8 +590,10 @@ class interactiveSim():
           mId = self.messageId
     rP = interactivePacket(packet, mId)
     self.messages.append(rP)
+
     if self.script:
       print("Node", interface.myInfo.my_node_num-HW_ID_OFFSET, "sent", packet["decoded"]["simulator"]["portnum"], "with id", mId, "over the air!")
+
     transmitter = next((n for n in self.nodes if n.TCPPort == interface.portNumber), None)
     receivers = [n for n in self.nodes if n.nodeid != transmitter.nodeid]
     rxs, rssis, snrs = self.calcReceivers(transmitter, receivers)
@@ -532,6 +629,39 @@ class interactiveSim():
           fromNode.airUtilTx.append(airUtilTx)
 
 
+  def onReceiveAll(self, interface, packet):
+    if interface.portNumber == 4403:
+      fromRadio = self.copyPacket(packet)
+      if fromRadio is not None:
+        # print("Forward", packet["decoded"])
+        b = fromRadio.SerializeToString()
+        bufLen = len(b)
+        # We convert into a string, because the TCP code doesn't work with byte arrays
+        header = bytes([0x94, 0xC3, (bufLen >> 8) & 0xFF, bufLen & 0xFF])
+        self.clientSocket.send(header + b)
+
+
+  def nodeReader(self):
+    while not self.wantExit and self.nodes[0].iface != None:
+      if self.clientConnected:
+        break
+      else:
+        bytes = self.nodes[0].iface._readBytes(MAX_TO_FROM_RADIO_SIZE)
+        if len(bytes) > 0:
+          # print(bytes)
+          self.clientSocket.send(bytes)
+
+
+  def clientReader(self):
+    while not self.wantExit:
+      if self.nodes[0].iface != None:
+        bytes = self.clientSocket.recv(MAX_TO_FROM_RADIO_SIZE)
+        if len(bytes) > 0:
+          self.nodes[0].iface._writeBytes(bytes)
+      else:
+        time.sleep(0.1)
+
+
   def calcReceivers(self, tx, receivers): 
     rxs = []
     rssis = []
@@ -556,6 +686,10 @@ class interactiveSim():
       n.iface.close()
     if self.docker:
       self.container.stop()
+    if self.forwardToClient:
+      self._wantExit = True
+      self.forwardSocket.close()
+      self.clientSocket.close()
 
 
 class CommandProcessor(cmd.Cmd):
