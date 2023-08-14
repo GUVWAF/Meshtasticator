@@ -366,12 +366,11 @@ class interactiveSim():
         exit(1)
       n0 = self.nodes[0]
       dockerClient = docker.from_env()
-      startNode = "./meshtasticd_linux_amd64"
+      startNode = "./meshtasticd_linux_amd64 "
       if self.eraseFlash:
-        startNode += " -e "
+        startNode += "-e "
       if sys.platform == "darwin":
-        self.container = dockerClient.containers.run("meshtastic/device-simulator", \
-          startNode + "-d /home/node"+str(n0.nodeid)+" -h "+str(n0.hwId)+" -p "+str(n0.TCPPort), \
+        self.container = dockerClient.containers.run("meshtastic/device-simulator", startNode + "-d /home/node"+str(n0.nodeid)+" -h "+str(n0.hwId)+" -p "+str(n0.TCPPort), \
           ports=dict(zip((str(n.TCPPort)+'/tcp' for n in self.nodes), (n.TCPPort for n in self.nodes))), detach=True, auto_remove=True, user="root")
         for n in self.nodes[1:]:
           self.container.exec_run("./meshtasticd_linux_amd64 -e -d /home/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort), detach=True, user="root") 
@@ -497,6 +496,7 @@ class interactiveSim():
     iface._sendToRadio(toRadio)
 
   def copyPacket(self, packet):
+    print(packet)
     try:
       if 'simulator' in packet or packet["decoded"]["portnum"] == "SIMULATOR_APP":
         return None
