@@ -327,7 +327,7 @@ class interactiveSim():
         self.eraseFlash = True
       elif sys.argv[i] == "--f":
         self.forwardToClient = True
-      elif not "--p" in sys.argv[i] and not "/" in sys.argv[i]:
+      elif not "--p" in sys.argv[i] and not "/" in sys.argv[i] and str(sys.argv[i]).isnumeric:
         if int(sys.argv[i]) > 10:
           print("Not sure if you want to start more than 10 terminals. Exiting.")
           exit(1)
@@ -430,7 +430,6 @@ class interactiveSim():
         iface = tcp_interface.TCPInterface(hostname="localhost", portNumber=n.TCPPort)
         n.addInterface(iface)
       if self.forwardToClient:
-        time.sleep(2)
         self.clientConnected = True
         iface0.localNode.nodeNum = self.nodes[0].hwId
         iface0.connect() # real connection now
@@ -541,30 +540,33 @@ class interactiveSim():
 
 
   def sendBroadcast(self, text, fromNode):
-    self.nodes[fromNode].iface.sendText(text)
+    self.getNodeIfaceById(fromNode).sendText(text)
 
 
   def sendDM(self, text, fromNode, toNode):
-    self.nodes[fromNode].iface.sendText(text, destinationId=self.nodes[toNode].hwId, wantAck=True)
+    self.getNodeIfaceById(fromNode).sendText(text, destinationId=self.nodes[toNode].hwId, wantAck=True)
 
 
   def sendPing(self, fromNode, toNode):
     payload = str.encode("test string")
-    self.nodes[fromNode].iface.sendData(payload, self.nodes[toNode].hwId, portNum=portnums_pb2.PortNum.REPLY_APP,
+    self.getNodeIfaceById(fromNode).sendData(payload, self.nodes[toNode].hwId, portNum=portnums_pb2.PortNum.REPLY_APP,
       wantAck=True, wantResponse=True)
 
 
   def traceRoute(self, fromNode, toNode):
     r = mesh_pb2.RouteDiscovery()
-    self.nodes[fromNode].iface.sendData(r, destinationId=self.nodes[toNode].hwId, portNum=70, wantResponse=True)
+    self.getNodeIfaceById(fromNode).sendData(r, destinationId=self.nodes[toNode].hwId, portNum=70, wantResponse=True)
 
 
   def requestPosition(self, fromNode, toNode):
-    self.nodes[fromNode].iface.sendPosition(destinationId=self.nodes[toNode].hwId, wantResponse=True)
+    self.getNodeIfaceById(fromNode).sendPosition(destinationId=self.nodes[toNode].hwId, wantResponse=True)
 
 
-  def getNodeById(self, id):
-    return self.nodes[id].iface.localNode
+  def getNodeIfaceById(self, id):
+    for n in self.nodes:
+      if n.hwId == id+HW_ID_OFFSET:
+        return n.iface
+    return None
 
   
   def nodeIdToDest(self, id):
@@ -573,7 +575,7 @@ class interactiveSim():
 
 
   def sendFromTo(self, fromNode, toNode):
-    return self.nodes[fromNode].iface.getNode(self.nodeIdToDest(toNode))  
+    return self.getNodeIfaceById(fromNode).getNode(self.nodeIdToDest(toNode))  
 
 
   def onReceive(self, interface, packet): 
@@ -597,38 +599,40 @@ class interactiveSim():
       print("Node", interface.myInfo.my_node_num-HW_ID_OFFSET, "sent", packet["decoded"]["simulator"]["portnum"], "with id", mId, "over the air!")
 
     transmitter = next((n for n in self.nodes if n.TCPPort == interface.portNumber), None)
-    receivers = [n for n in self.nodes if n.nodeid != transmitter.nodeid]
-    rxs, rssis, snrs = self.calcReceivers(transmitter, receivers)
-    rP.setTxRxs(transmitter, rxs)
-    rP.setRSSISNR(rssis, snrs)
-    for i,r in enumerate(rxs):
-      self.forwardPacket(r.iface, packet, rssis[i], snrs[i])
-    self.graph.packets.append(rP)
+    if transmitter is not None:
+      receivers = [n for n in self.nodes if n.nodeid != transmitter.nodeid]
+      rxs, rssis, snrs = self.calcReceivers(transmitter, receivers)
+      rP.setTxRxs(transmitter, rxs)
+      rP.setRSSISNR(rssis, snrs)
+      for i,r in enumerate(rxs):
+        self.forwardPacket(r.iface, packet, rssis[i], snrs[i])
+      self.graph.packets.append(rP)
 
 
   def onReceiveMetrics(self, interface, packet):
-    fromNode = self.nodes[int(packet["from"])-HW_ID_OFFSET]
-    data = packet["decoded"]["payload"]
-    if getattr(data, "SerializeToString", None):
-      data = data.SerializeToString()
-    telemetryPacket = telemetry_pb2.Telemetry()
-    telemetryPacket.ParseFromString(data)
-    channelUtilization = 0
-    airUtilTx = 0
-    telemetryDict = proto.MessageToDict(telemetryPacket)
-    if 'deviceMetrics' in telemetryDict:
-      deviceMetrics = telemetryDict['deviceMetrics']
-      if 'time' in telemetryDict:
-        timestamp = int(telemetryDict['time'])
-        # Check whether it is not a duplicate
-        if len(fromNode.timestamps) == 0 or timestamp > fromNode.timestamps[-1]:
-          fromNode.timestamps.append(timestamp)
-          if 'channelUtilization' in deviceMetrics:
-            channelUtilization = float(deviceMetrics['channelUtilization'])
-          fromNode.channelUtilization.append(channelUtilization)
-          if 'airUtilTx' in deviceMetrics:
-            airUtilTx = float(deviceMetrics['airUtilTx'])
-          fromNode.airUtilTx.append(airUtilTx)
+    fromNode = next((n for n in self.nodes if n.hwId == packet["from"]-HW_ID_OFFSET), None)
+    if fromNode is not None:
+      data = packet["decoded"]["payload"]
+      if getattr(data, "SerializeToString", None):
+        data = data.SerializeToString()
+      telemetryPacket = telemetry_pb2.Telemetry()
+      telemetryPacket.ParseFromString(data)
+      channelUtilization = 0
+      airUtilTx = 0
+      telemetryDict = proto.MessageToDict(telemetryPacket)
+      if 'deviceMetrics' in telemetryDict:
+        deviceMetrics = telemetryDict['deviceMetrics']
+        if 'time' in telemetryDict:
+          timestamp = int(telemetryDict['time'])
+          # Check whether it is not a duplicate
+          if len(fromNode.timestamps) == 0 or timestamp > fromNode.timestamps[-1]:
+            fromNode.timestamps.append(timestamp)
+            if 'channelUtilization' in deviceMetrics:
+              channelUtilization = float(deviceMetrics['channelUtilization'])
+            fromNode.channelUtilization.append(channelUtilization)
+            if 'airUtilTx' in deviceMetrics:
+              airUtilTx = float(deviceMetrics['airUtilTx'])
+            fromNode.airUtilTx.append(airUtilTx)
 
 
   def onReceiveAll(self, interface, packet):
@@ -709,8 +713,8 @@ class CommandProcessor(cmd.Cmd):
             print('Please use the syntax: "broadcast <fromNode> <txt>"')
             return False
         fromNode = int(arguments[0])
-        if fromNode >= len(self.sim.nodes):
-            print('Node ID', fromNode, 'is outside the range of nodes.')
+        if self.sim.getNodeIfaceById(fromNode) is None:
+            print('Node ID', fromNode, 'is not in the list of nodes.')
             return False
         txt = ""
         for s in arguments[1:-1]:
@@ -728,12 +732,12 @@ class CommandProcessor(cmd.Cmd):
             print('Please use the syntax: "DM <fromNode> <toNode> <txt>"')
             return False
         fromNode = int(arguments[0])
-        if fromNode >= len(self.sim.nodes):
-            print('Node ID', fromNode, 'is outside the range of nodes.')
+        if self.sim.getNodeIfaceById(fromNode) is None:
+            print('Node ID', fromNode, 'is not in the list of nodes.')
             return False
         toNode = int(arguments[1])
-        if toNode >= len(self.sim.nodes):
-            print('Node ID', toNode, 'is outside the range of nodes.')
+        if self.sim.getNodeIfaceById(toNode) is None:
+            print('Node ID', toNode, 'is not in the list of nodes.')
             return False
         txt = ""
         for s in arguments[2:-1]:
@@ -751,12 +755,12 @@ class CommandProcessor(cmd.Cmd):
             print('Please use the syntax: "ping <fromNode> <toNode>"')
             return False
         fromNode = int(arguments[0])
-        if fromNode >= len(self.sim.nodes):
-            print('Node ID', fromNode, 'is outside the range of nodes.')
+        if self.sim.getNodeIfaceById(fromNode) is None:
+            print('Node ID', fromNode, 'is not in the list of nodes.')
             return False
         toNode = int(arguments[1])
-        if toNode >= len(self.sim.nodes):
-            print('Node ID', toNode, 'is outside the range of nodes.')
+        if self.sim.getNodeIfaceById(toNode) is None:
+            print('Node ID', toNode, 'is not in the list of nodes.')
             return False
         print('Instructing node', fromNode, 'to send ping to node', toNode, '(message ID =', str(self.sim.messageId+1)+')')
         self.sim.sendPing(fromNode, toNode)
@@ -770,12 +774,12 @@ class CommandProcessor(cmd.Cmd):
             print('Please use the syntax: "traceroute <fromNode> <toNode>"')
             return False
         fromNode = int(arguments[0])
-        if fromNode >= len(self.sim.nodes):
-            print('Node ID', fromNode, 'is outside the range of nodes.')
+        if self.sim.getNodeIfaceById(fromNode) is None:
+            print('Node ID', fromNode, 'is not in the list of nodes.')
             return False
         toNode = int(arguments[1])
-        if toNode >= len(self.sim.nodes):
-            print('Node ID', toNode, 'is outside the range of nodes.')
+        if self.sim.getNodeIfaceById(toNode) is None:
+            print('Node ID', toNode, 'is not in the list of nodes.')
             return False
         print('Instructing node', fromNode, 'to send traceroute request to node', toNode, '(message ID =', str(self.sim.messageId+1)+')')
         print('This takes a while, the result will be in the log of node '+str(fromNode)+'.')
@@ -790,12 +794,12 @@ class CommandProcessor(cmd.Cmd):
             print('Please use the syntax: "reqPos <fromNode> <toNode>"')
             return False
         fromNode = int(arguments[0])
-        if fromNode >= len(self.sim.nodes):
-            print('Node ID', fromNode, 'is outside the range of nodes.')
+        if self.sim.getNodeIfaceById(fromNode) is None:
+            print('Node ID', fromNode, 'is not in the list of nodes.')
             return False
         toNode = int(arguments[1])
-        if toNode >= len(self.sim.nodes):
-            print('Node ID', toNode, 'is outside the range of nodes.')
+        if self.sim.getNodeIfaceById(toNode) is None:
+            print('Node ID', toNode, 'is not in the list of nodes.')
             return False
         print('Instructing node', fromNode, 'to send position request to node', toNode, '(message ID =', str(self.sim.messageId+1)+')')
         self.sim.requestPosition(fromNode, toNode)
@@ -809,8 +813,8 @@ class CommandProcessor(cmd.Cmd):
             print('Please use the syntax: "nodes <id0> [id1, etc.]"')
             return False
         for n in arguments:
-            if int(n) >= len(self.sim.nodes):
-                print('Node ID', n, 'is outside the range of nodes.')
+            if self.sim.getNodeIfaceById(n) is None:
+                print('Node ID', n, 'is not in the list of nodes.')
                 continue
             self.sim.showNodes(int(n))
 
@@ -822,9 +826,12 @@ class CommandProcessor(cmd.Cmd):
             print('Please use the syntax: "remove <id>"')
             return False
         nodeId = (int(arguments[0]))
-        self.sim.getNodeById(nodeId).exitSimulator()
-        self.sim.nodes[nodeId].iface.close()
-        del self.sim.nodes[nodeId]
+        if self.sim.getNodeIfaceById(nodeId) is None:
+          print('Node ID', nodeId, 'is not in the list of nodes.')
+        else:
+          self.sim.getNodeIfaceById(nodeId).localNode.exitSimulator()
+          self.sim.getNodeIfaceById(nodeId).close()
+          del self.sim.nodes[nodeId]
 
 
     def do_plot(self, line):
