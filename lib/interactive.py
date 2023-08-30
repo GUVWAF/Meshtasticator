@@ -453,26 +453,7 @@ class interactiveSim():
     if len(data) > mesh_pb2.Constants.DATA_PAYLOAD_LEN:
       raise Exception("Data payload too big")
 
-    if packet["decoded"]["portnum"] == "TEXT_MESSAGE_APP":
-      meshPacket = mesh_pb2.MeshPacket()
-    elif packet["decoded"]["portnum"] == "ROUTING_APP":
-      meshPacket = mesh_pb2.Routing()
-    elif packet["decoded"]["portnum"] == "NODEINFO_APP":
-      meshPacket = mesh_pb2.NodeInfo()
-    elif packet["decoded"]["portnum"] == "POSITION_APP":
-      meshPacket = mesh_pb2.Position()
-    elif packet["decoded"]["portnum"] == "USER_APP":
-      meshPacket = mesh_pb2.User()  
-    elif packet["decoded"]["portnum"] == "ADMIN_APP":
-      meshPacket = admin_pb2.AdminMessage()
-    elif packet["decoded"]["portnum"] == "TELEMETRY_APP":
-      meshPacket = telemetry_pb2.Telemetry()
-    elif packet["decoded"]["portnum"] == "REMOTE_HARDWARE_APP":
-      meshPacket = remote_hardware_pb2.HardwareMessage()
-    elif packet["decoded"]["portnum"] == "NEIGHBORINFO_APP":
-      meshPacket = mesh_pb2.NeighborInfo() 
-    else:
-      meshPacket = mesh_pb2.MeshPacket()
+    meshPacket = mesh_pb2.MeshPacket()
 
     meshPacket.decoded.payload = data
     meshPacket.decoded.portnum = portnums_pb2.SIMULATOR_APP
