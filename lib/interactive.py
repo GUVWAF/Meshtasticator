@@ -37,7 +37,7 @@ class interactiveNode():
       self.isRepeater = False
       self.hopLimit = conf.hopLimit
       self.antennaGain = conf.GL
-      self.neighborInfo = True
+      self.neighborInfo = False
     self.iface = None
     self.hwId = hwId
     self.TCPPort = TCPPort 
