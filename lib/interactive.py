@@ -526,22 +526,22 @@ class interactiveSim():
 
 
   def sendDM(self, text, fromNode, toNode):
-    self.getNodeIfaceById(fromNode).sendText(text, destinationId=self.nodes[toNode].hwId, wantAck=True)
+    self.getNodeIfaceById(fromNode).sendText(text, destinationId=self.nodeIdToDest(toNode), wantAck=True)
 
 
   def sendPing(self, fromNode, toNode):
     payload = str.encode("test string")
-    self.getNodeIfaceById(fromNode).sendData(payload, self.nodes[toNode].hwId, portNum=portnums_pb2.PortNum.REPLY_APP,
+    self.getNodeIfaceById(fromNode).sendData(payload, destinationId=self.nodeIdToDest(toNode), portNum=portnums_pb2.PortNum.REPLY_APP,
       wantAck=True, wantResponse=True)
 
 
   def traceRoute(self, fromNode, toNode):
     r = mesh_pb2.RouteDiscovery()
-    self.getNodeIfaceById(fromNode).sendData(r, destinationId=self.nodes[toNode].hwId, portNum=70, wantResponse=True)
+    self.getNodeIfaceById(fromNode).sendData(r, destinationId=self.nodeIdToDest(toNode), portNum=portnums_pb2.PortNum.TRACEROUTE_APP, wantResponse=True)
 
 
   def requestPosition(self, fromNode, toNode):
-    self.getNodeIfaceById(fromNode).sendPosition(destinationId=self.nodes[toNode].hwId, wantResponse=True)
+    self.getNodeIfaceById(fromNode).sendPosition(destinationId=self.nodeIdToDest(toNode), wantResponse=True)
 
 
   def getNodeIfaceById(self, id):
