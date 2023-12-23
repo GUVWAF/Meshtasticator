@@ -445,7 +445,7 @@ class interactiveSim():
       sys.exit(1)
 
 
-  def forwardPacket(self, iface, packet, rssi, snr): 
+  def forwardPacket(self, receivers, packet, rssis, snrs): 
     data = packet["decoded"]["payload"]
     if getattr(data, "SerializeToString", None):
       data = data.SerializeToString()
@@ -470,11 +470,12 @@ class interactiveSim():
       meshPacket.decoded.want_response = packet["decoded"]["wantResponse"]
     if "channel" in packet:
       meshPacket.channel = int(packet["channel"])
-    meshPacket.rx_rssi = int(rssi) 
-    meshPacket.rx_snr = int(snr)  
-    toRadio = mesh_pb2.ToRadio()
-    toRadio.packet.CopyFrom(meshPacket)
-    iface._sendToRadio(toRadio)
+    for i, rx in enumerate(receivers):
+      meshPacket.rx_rssi = int(rssis[i]) 
+      meshPacket.rx_snr = int(snrs[i])  
+      toRadio = mesh_pb2.ToRadio()
+      toRadio.packet.CopyFrom(meshPacket)
+      rx.iface._sendToRadio(toRadio)
 
   def copyPacket(self, packet):
     # print(packet)
@@ -585,8 +586,7 @@ class interactiveSim():
       rxs, rssis, snrs = self.calcReceivers(transmitter, receivers)
       rP.setTxRxs(transmitter, rxs)
       rP.setRSSISNR(rssis, snrs)
-      for i,r in enumerate(rxs):
-        self.forwardPacket(r.iface, packet, rssis[i], snrs[i])
+      self.forwardPacket(rxs, packet, rssis, snrs)
       self.graph.packets.append(rP)
 
 
