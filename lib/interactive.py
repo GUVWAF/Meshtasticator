@@ -354,7 +354,7 @@ class interactiveSim():
 
     self.graph = interactiveGraph()
     for n in range(conf.NR_NODES):
-      node = interactiveNode(self.nodes, n, n+HW_ID_OFFSET, n+TCP_PORT_OFFSET, config[n])
+      node = interactiveNode(self.nodes, n, self.nodeIdToHwId(n), n+TCP_PORT_OFFSET, config[n])
       self.nodes.append(node)
       self.graph.addNode(node)
 
@@ -526,34 +526,38 @@ class interactiveSim():
 
 
   def sendDM(self, text, fromNode, toNode):
-    self.getNodeIfaceById(fromNode).sendText(text, destinationId=self.nodeIdToDest(toNode), wantAck=True)
+    self.getNodeIfaceById(fromNode).sendText(text, destinationId=self.nodeIdToHwId(toNode), wantAck=True)
 
 
   def sendPing(self, fromNode, toNode):
     payload = str.encode("test string")
-    self.getNodeIfaceById(fromNode).sendData(payload, destinationId=self.nodeIdToDest(toNode), portNum=portnums_pb2.PortNum.REPLY_APP,
+    self.getNodeIfaceById(fromNode).sendData(payload, destinationId=self.nodeIdToHwId(toNode), portNum=portnums_pb2.PortNum.REPLY_APP,
       wantAck=True, wantResponse=True)
 
 
   def traceRoute(self, fromNode, toNode):
     r = mesh_pb2.RouteDiscovery()
-    self.getNodeIfaceById(fromNode).sendData(r, destinationId=self.nodeIdToDest(toNode), portNum=portnums_pb2.PortNum.TRACEROUTE_APP, wantResponse=True)
+    self.getNodeIfaceById(fromNode).sendData(r, destinationId=self.nodeIdToHwId(toNode), portNum=portnums_pb2.PortNum.TRACEROUTE_APP, wantResponse=True)
 
 
   def requestPosition(self, fromNode, toNode):
-    self.getNodeIfaceById(fromNode).sendPosition(destinationId=self.nodeIdToDest(toNode), wantResponse=True)
+    self.getNodeIfaceById(fromNode).sendPosition(destinationId=self.nodeIdToHwId(toNode), wantResponse=True)
 
 
   def getNodeIfaceById(self, id):
     for n in self.nodes:
-      if n.hwId == id+HW_ID_OFFSET:
+      if n.hwId == self.nodeIdToHwId(id):
         return n.iface
     return None
 
   
   def nodeIdToDest(self, id):
-    val = hex(id+HW_ID_OFFSET).strip('0x')
+    val = hex(self.nodeIdToHwId(id)).strip('0x')
     return '!'+'0'*(8-len(val))+val
+  
+
+  def nodeIdToHwId(self, id):
+    return id+HW_ID_OFFSET
 
 
   def sendFromTo(self, fromNode, toNode):
