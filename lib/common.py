@@ -141,7 +141,7 @@ def genScenario():
 		nodeRepeater.append(roleButton.value_selected == 'Repeater')
 		nodeHopLimit.append(slider.val)
 		gains.append(float(gain_textbox.text))
-		neighborInfo.append("True")
+		neighborInfo.append(bool(0))
 		fig.canvas.mpl_disconnect(cid)
 		plt.close()
 	button.on_clicked(submit)
@@ -156,7 +156,7 @@ def genScenario():
 				nodeRepeater.append(roleButton.value_selected == 'Repeater')
 				nodeHopLimit.append(slider.val)
 				gains.append(float(gain_textbox.text))
-				neighborInfo.append("True")
+				neighborInfo.append(bool(0))
 				# Reset config values
 				roleButton.set_active(1 if conf.router else 0)
 				height_textbox.set_val(conf.HM)
