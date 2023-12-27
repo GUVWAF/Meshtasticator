@@ -595,7 +595,7 @@ class interactiveSim():
 
 
   def onReceiveMetrics(self, interface, packet):
-    fromNode = next((n for n in self.nodes if n.hwId == packet["from"]-HW_ID_OFFSET), None)
+    fromNode = next((n for n in self.nodes if n.hwId == packet["from"]), None)
     if fromNode is not None:
       data = packet["decoded"]["payload"]
       if getattr(data, "SerializeToString", None):
