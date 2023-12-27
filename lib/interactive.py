@@ -372,14 +372,14 @@ class interactiveSim():
 
       if sys.platform == "darwin":
         self.container = dockerClient.containers.run("meshtastic/device-simulator", startNode + "-d /home/node"+str(n0.nodeid)+" -h "+str(n0.hwId)+" -p "+str(n0.TCPPort), \
-          ports=dict(zip((str(n.TCPPort)+'/tcp' for n in self.nodes), (n.TCPPort for n in self.nodes))), detach=True, auto_remove=True, user="root")
+          ports=dict(zip((str(n.TCPPort)+'/tcp' for n in self.nodes), (n.TCPPort for n in self.nodes))), name="Meshtastic", detach=True, auto_remove=True, user="root")
         for n in self.nodes[1:]:
           self.container.exec_run("./meshtasticd_linux_amd64 -e -d /home/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort), detach=True, user="root") 
         print("Docker container with name "+str(self.container.name)+" is started.")
       else: 
         self.container = dockerClient.containers.run("meshtastic/device-simulator", \
           "sh -c '" + startNode + "-d /home/node"+str(n0.nodeid)+" -h "+str(n0.hwId)+" -p "+str(n0.TCPPort)+" > /home/out_"+str(n0.nodeid)+".log'", \
-          ports=dict(zip((str(n.TCPPort)+'/tcp' for n in self.nodes), (n.TCPPort for n in self.nodes))), detach=True, auto_remove=True, user="root", volumes={"Meshtasticator": {'bind': '/home/', 'mode': 'rw'}})
+          ports=dict(zip((str(n.TCPPort)+'/tcp' for n in self.nodes), (n.TCPPort for n in self.nodes))), name="Meshtastic", detach=True, auto_remove=True, user="root", volumes={"Meshtasticator": {'bind': '/home/', 'mode': 'rw'}})
         for n in self.nodes[1:]:
           self.container.exec_run("sh -c '" + startNode + "-d /home/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)+" > /home/out_"+str(n.nodeid)+".log'", detach=True, user="root") 
         print("Docker container with name "+str(self.container.name)+" is started.")
