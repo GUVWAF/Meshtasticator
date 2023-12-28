@@ -214,7 +214,7 @@ class interactiveGraph(Graph):
             else: 
               msgType = "Forwarding\/response"
           else:
-            if int(p.packet['from'])-HW_ID_OFFSET == rx.nodeid:
+            if int(p.packet['from']) == rx.hwId:
               msgType = "Implicit\/ACK"
             else: 
               if to == "All":
@@ -323,8 +323,6 @@ class interactiveSim():
         with open(os.path.join("out", "nodeConfig.yaml"), 'r') as file: 
           config = yaml.load(file, Loader=yaml.FullLoader)
         conf.NR_NODES = len(config.keys())
-      elif "--e" in sys.argv[i] or "--erase" in sys.argv[i]:
-        self.eraseFlash = True
       elif sys.argv[i] == "--f":
         self.forwardToClient = True
       elif not "--p" in sys.argv[i] and not "/" in sys.argv[i] and str(sys.argv[i]).isnumeric:
@@ -366,9 +364,7 @@ class interactiveSim():
         exit(1)
       n0 = self.nodes[0]
       dockerClient = docker.from_env()
-      startNode = "./meshtasticd_linux_amd64 "
-      if self.eraseFlash:
-        startNode += "-e "
+      startNode = "./meshtasticd_linux_amd64 -e "
 
       if sys.platform == "darwin":
         self.container = dockerClient.containers.run("meshtastic/device-simulator", startNode + "-d /home/node"+str(n0.nodeid)+" -h "+str(n0.hwId)+" -p "+str(n0.TCPPort), \
@@ -398,11 +394,7 @@ class interactiveSim():
           newTerminal = "gnome-terminal --title='Node "+str(n.nodeid)+"' -- "
         else: 
           newTerminal = "xterm -title 'Node "+str(n.nodeid)+"' -e "
-        startNode = "program -d "+os.path.expanduser('~')+"/.portduino/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort)
-        if self.eraseFlash:
-          startNode += " -e &"
-        else:
-          startNode += " &"
+        startNode = "program -d "+os.path.expanduser('~')+"/.portduino/node"+str(n.nodeid)+" -h "+str(n.hwId)+" -p "+str(n.TCPPort) + " -e &"
         cmdString = newTerminal+pathToProgram+startNode
         os.system(cmdString)  
 
@@ -420,29 +412,48 @@ class interactiveSim():
       self.clientThread = threading.Thread(target=self.clientReader, args=(), daemon=True)
       self.nodeThread.start()
       self.clientThread.start()
-      start_idx = 1
     else:
-      start_idx = 0
+      print("Waiting for nodes to boot...")
       time.sleep(4)  # Allow instances to start up their TCP service 
 
     try:
-      for n in self.nodes[start_idx:]:
+      for n in self.nodes[int(self.forwardToClient):]:
         iface = tcp_interface.TCPInterface(hostname="localhost", portNumber=n.TCPPort)
         n.addInterface(iface)
       if self.forwardToClient:
         self.clientConnected = True
         iface0.localNode.nodeNum = self.nodes[0].hwId
         iface0.connect() # real connection now
+      for n in self.nodes:
+        n.setConfig()
+      self.reconnectNodes()
       pub.subscribe(self.onReceive, "meshtastic.receive.simulator")
       pub.subscribe(self.onReceiveMetrics, "meshtastic.receive.telemetry")
       if self.forwardToClient:
         pub.subscribe(self.onReceiveAll, "meshtastic.receive")
-      for n in self.nodes:
-        n.setConfig()
     except(Exception) as ex:
       print(f"Error: Could not connect to native program: {ex}")
       self.closeNodes()
       sys.exit(1)
+
+
+  def reconnectNodes(self):
+    time.sleep(3)
+    for n in self.nodes[int(self.forwardToClient):]:
+      try:
+        n.iface.close()
+        n.iface = None
+      except OSError:
+        pass
+    time.sleep(5)
+    for n in self.nodes:
+      while not n.iface:
+        try:
+          iface = tcp_interface.TCPInterface(hostname="localhost", portNumber=n.TCPPort)
+          n.addInterface(iface)
+        except OSError:
+          print("Trying to reconnect to node...")
+          time.sleep(1)
 
 
   def forwardPacket(self, receivers, packet, rssis, snrs): 
