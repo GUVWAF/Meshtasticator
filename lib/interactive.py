@@ -568,7 +568,7 @@ class interactiveSim():
   
 
   def nodeIdToHwId(self, id):
-    return id+HW_ID_OFFSET
+    return int(id) + HW_ID_OFFSET
 
 
   def sendFromTo(self, fromNode, toNode):
