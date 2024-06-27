@@ -7,12 +7,12 @@ Please `git clone` or download this repository, navigate to the Meshtasticator f
 ```pip install -r requirements.txt```.
 
 The simulator runs the Linux native application of Meshtastic firmware, which can be done on your Linux PC using [PlatformIO](https://meshtastic.org/docs/development/firmware/build) or using [Docker](https://meshtastic.org/docs/software/linux-native#usage-with-docker). 
-- Using PlatformIO, select 'native' and click on 'build'. Locate the generated binary file, which will probably be in *Meshtastic-device/.pio/build/native/*. Either copy the file called 'program' to the directory where you will be running the Python script from, or add the full path as argument after *--p*. For example: ```python3 interactiveSim.py 3 --p /home/User/Meshtastic-device/.pio/build/native/```.
-- For usage with Docker, the simulator will pull a Container Image from Docker Hub, which builds the latest Meshtastic firmware. Install the Docker SDK for Python with ```pip3 install docker```. Make sure the Docker daemon or Desktop application is running. Then run the interactive simulator with *--d* as argument, e.g.: ```python3 interactiveSim.py 3 --d```.
+- Using PlatformIO, select 'native' and click on 'build'. Locate the generated binary file, which will probably be in *Meshtastic-device/.pio/build/native/*. Either copy the file called 'program' to the directory where you will be running the Python script from, or add the full path as argument after *-p*. For example: ```python3 interactiveSim.py 3 -p /home/User/Meshtastic-device/.pio/build/native/```.
+- For usage with Docker, the simulator will pull a Container Image from Docker Hub, which builds the latest Meshtastic firmware. Install the Docker SDK for Python with ```pip3 install docker```. Make sure the Docker daemon or Desktop application is running. Then run the interactive simulator with *-d* as argument, e.g.: ```python3 interactiveSim.py 3 -d```.
 
 The interactive simulator can then be run as follows: 
 
-```python3 interactiveSim.py [nrNodes] [--p <full-path-to-program>]```,
+```python3 interactiveSim.py [nrNodes] [-p <full-path-to-program>]```,
 
 where *nrNodes* (optional) is the number of instances you want to launch. Note that for each instance a terminal and TCP port (starting at 4403) is opened. If the number of nodes is given, they will be randomly placed, otherwise you first have to place the nodes on a plot. After you place a node, you can change its [role](https://meshtastic.org/docs/settings/config/device#role), hopLimit, height (elevation) and antenna gain. These settings will automatically save when you place a new node or when you start the simulation.
 
@@ -49,7 +49,7 @@ When the simulation is started, you can send [commands](#list-of-commands) to le
   Exit the simulator without plotting routes.
 
 ## Usage with script
-To predefine what you want to send, you can also modify the script *interactiveSim.py* in the 'try' clause. Then you will have to run the simulator with the '--s' argument, like: ```python3 interactiveSim.py 3 --s```.
+To predefine what you want to send, you can also modify the script *interactiveSim.py* in the 'try' clause. Then you will have to run the simulator with the '-s' argument, like: ```python3 interactiveSim.py 3 -s```.
 The nodes first exchange their NodeInfo. Afterwards, you can let them send messages. Once the nodes are done sending, you can close them by pressing Control+c or just wait for the timeout set at the end of the 'try' clause. 
 
 ## Tips and tricks

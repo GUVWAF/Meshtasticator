@@ -11,6 +11,7 @@ import time
 import cmd
 import socket
 import threading
+import argparse
 from . import config as conf
 from .common import *
 HW_ID_OFFSET = 16
@@ -298,54 +299,21 @@ class interactiveGraph(Graph):
 
 class interactiveSim(): 
   def __init__(self):
-    self.script = False
     self.messages = []
     self.messageId = -1
     self.nodes = []
     foundNodes = False
     foundPath = False
-    self.docker = False
     self.eraseFlash = False
-    self.forwardToClient = False
     self.clientConnected = False
     self.forwardSocket = None
     self.clientSocket = None
     self.nodeThread = None
     self.clientThread = None
     self.wantExit = False
-    for i in range(1, len(sys.argv)):
-      if "--s" in sys.argv[i] or "--script" in sys.argv[i]:
-        self.script = True
-      elif "--d" in sys.argv[i] or "--docker" in sys.argv[i]:
-        self.docker = True
-      elif "--from-file" in sys.argv[i]:
-        foundNodes = True
-        with open(os.path.join("out", "nodeConfig.yaml"), 'r') as file: 
-          config = yaml.load(file, Loader=yaml.FullLoader)
-        conf.NR_NODES = len(config.keys())
-      elif sys.argv[i] == "--f":
-        self.forwardToClient = True
-      elif not "--p" in sys.argv[i] and not "/" in sys.argv[i] and str(sys.argv[i]).isnumeric:
-        if int(sys.argv[i]) > 10:
-          print("Not sure if you want to start more than 10 terminals. Exiting.")
-          exit(1)
-        conf.NR_NODES = int(sys.argv[i])
-        foundNodes = True
-        config = [None for _ in range(conf.NR_NODES)]
-    if not foundNodes: 
-      config = genScenario()
-      conf.NR_NODES = len(config.keys())
-    if len(sys.argv) > 2 and "--p" in sys.argv[2]:
-      string = sys.argv[3]
-      pathToProgram = string
-      foundPath = True
-    elif len(sys.argv) > 1:
-      if "--p" in sys.argv[1]:
-        string = sys.argv[2]
-        pathToProgram = string
-        foundPath = True
-    if not foundPath and not self.docker:
-      pathToProgram = os.getcwd()+"/"
+
+    config, pathToProgram = self.parseInteractiveArgs(foundNodes)
+
     if not self.docker and not sys.platform.startswith('linux'):
       print("Docker is required for non-Linux OS.")
       self.docker = True
@@ -435,6 +403,37 @@ class interactiveSim():
       print(f"Error: Could not connect to native program: {ex}")
       self.closeNodes()
       sys.exit(1)
+
+
+  def parseInteractiveArgs(self, foundNodes):
+    parser = argparse.ArgumentParser(prog='interactiveSim')
+    parser.add_argument('nrNodes', type=int, nargs='?', choices=range(0, 11), default=0)
+    parser.add_argument('-s', '--script', action='store_true')
+    parser.add_argument('-d', '--docker', action='store_true')
+    parser.add_argument('--from-file', action='store_true')
+    parser.add_argument('-f', '--forward', action='store_true')
+    parser.add_argument('-p', '--program', type=str, default=os.getcwd() + "/")
+    args = parser.parse_args()
+    # print(args)
+
+    self.script = args.script
+    self.docker = args.docker
+    self.forwardToClient = args.forward
+    if args.from_file:
+      foundNodes = True
+      with open(os.path.join("out", "nodeConfig.yaml"), 'r') as file:
+        config = yaml.load(file, Loader=yaml.FullLoader)
+      conf.NR_NODES = len(config.keys())
+    elif args.nrNodes > 0:  # nrNodes was specified
+      conf.NR_NODES = args.nrNodes
+      foundNodes = True
+      config = [None for _ in range(conf.NR_NODES)]
+    if not foundNodes:
+      print("nrNodes was not specified, generating scenario...")
+      config = genScenario()
+      conf.NR_NODES = len(config.keys())
+    pathToProgram = args.program
+    return config, pathToProgram
 
 
   def reconnectNodes(self):
