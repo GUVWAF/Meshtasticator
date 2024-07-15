@@ -11,6 +11,9 @@ from pubsub import pub
 
 from .common import *
 
+# TODO: Fix mixed indentation!
+#       Some parts of the file use tabs, some parts user 2 spaces, and some parts use 4 spaces.
+
 HW_ID_OFFSET = 16
 TCP_PORT_OFFSET = 4403
 TCP_PORT_CLIENT = 4402

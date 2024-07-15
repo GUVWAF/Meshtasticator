@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
-import simpy
-import numpy as np
 import matplotlib
 try:
 	matplotlib.use("TkAgg")
-except ImportError: 
+except ImportError:
 	print('Tkinter is needed. Install python3-tk with your package manager.')
 	exit(1)
-from matplotlib import pyplot as plt
-import lib.config as conf
+
 from lib.common import *
 from lib.packet import *
 from lib.mac import *
 from lib.discrete_event import *
 
+
 VERBOSE = False
 SAVE = True
+
 
 class MeshNode():
 	def __init__(self, nodes, env, bc_pipe, nodeid, period, messages, packetsAtN, packets, delays, nodeConfig):

@@ -203,7 +203,7 @@ class MeshNode():
 					pAck = MeshPacket(self.nodes, self.nodeid, p.origTxNodeId, self.nodeid, conf.ACKLENGTH, messageSeq, env.now, False, True, p.seq) 
 					self.packets.append(pAck)
 					self.env.process(self.transmit(pAck))
-        # FloodingRouter: rebroadcasting received message 
+				# FloodingRouter: rebroadcasting received message
 				elif not p.destId == self.nodeid and not ackReceived and not realAckReceived and p.hopLimit > 0:
 					verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'rebroadcasts received packet', p.seq)
 					pNew = MeshPacket(self.nodes, p.origTxNodeId, p.destId, self.nodeid, p.packetLen, p.seq, p.genTime, p.wantAck, False, None) 

@@ -41,11 +41,9 @@ class BroadcastPipe(object):
 			raise RuntimeError('There are no output pipes.')
 		events = [store.put(packet) for store in self.pipes]
 		return self.env.all_of(events)
-       
+
 
 	def get_output_conn(self):
 		pipe = simpy.Store(self.env, capacity=self.capacity)
 		self.pipes.append(pipe)
 		return pipe
-
-

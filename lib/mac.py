@@ -54,8 +54,8 @@ def getRetransmissionMsec(node, packet):  # from RadioInterface::getRetransmissi
 
 
 if VERBOSE:
-	def verboseprint(*args, **kwargs): 
-		print(*args, **kwargs)
+    def verboseprint(*args, **kwargs):
+        print(*args, **kwargs)
 else:   
-	def verboseprint(*args, **kwargs): 
-		pass
+    def verboseprint(*args, **kwargs):
+        pass
