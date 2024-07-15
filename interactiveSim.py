@@ -13,8 +13,8 @@ if sim.script:  # Use '--s' as argument if you want to specify what you want to 
         time.sleep(45)  # Wait until nodeInfo messages are sent
         sim.showNodes()  # Show nodeDB as seen by each node
 
-        fromNode = 0  # Node from which a message will be send
-        toNode = 1  # Node to whom a message will be send (if not a broadcast)
+        fromNode = 0  # Node from which a message will be sent
+        toNode = 1  # Node to whom a message will be sent (if not a broadcast)
 
         """ Broadcast Message from node 0. """
         sim.sendBroadcast("Hi all", fromNode)
