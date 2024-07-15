@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-import simpy
 import sys
-import lib.config as conf
+
 from lib.common import *
-from lib.mac import *
-from lib.packet import * 
 from lib.discrete_event import *
+from lib.mac import *
+from lib.packet import *
 
 VERBOSE = True
 random.seed(conf.SEED)

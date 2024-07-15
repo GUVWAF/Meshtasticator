@@ -1,6 +1,8 @@
-from .phy import airtime, slotTime
-from . import config as conf
 import random
+
+from . import config as conf
+from .phy import airtime, slotTime
+
 
 VERBOSE = False
 CWmin = 2

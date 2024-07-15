@@ -1,19 +1,21 @@
+import os
+import random
+
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+import yaml
+from matplotlib.widgets import Button, Slider, RadioButtons, TextBox
 
 from . import config as conf
-from . import phy 
-import matplotlib
+from . import phy
+
 try:
 	matplotlib.use("TkAgg")
 except ImportError: 
 	print('Tkinter is needed. Install python3-tk with your package manager.')
 	exit(1)
-import matplotlib.pyplot as plt
-from matplotlib.widgets import Button, Slider, RadioButtons, TextBox
-import os
-import numpy as np
-import random
-import yaml 
-	
+
 
 def getParams(args):
 	if len(args) > 3:

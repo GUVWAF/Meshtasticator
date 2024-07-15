@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-import pandas as pd
-import numpy as np
-from matplotlib import pyplot as plt
 import matplotlib
+import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
+
 try:
 	matplotlib.use("TkAgg")
 except ImportError: 

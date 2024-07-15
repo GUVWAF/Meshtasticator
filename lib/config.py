@@ -1,5 +1,6 @@
 import numpy as np
 
+
 MODEL = 5  # Pathloss model to use (see README)
 
 XSIZE = 7500  # horizontal size of the area to simulate in m 

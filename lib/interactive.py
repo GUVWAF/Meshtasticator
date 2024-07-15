@@ -1,18 +1,16 @@
-from meshtastic import tcp_interface, BROADCAST_NUM, mesh_pb2, \
-	admin_pb2, telemetry_pb2, remote_hardware_pb2, portnums_pb2, channel_pb2
-from pubsub import pub
-from matplotlib import patches
-from matplotlib.widgets import TextBox
-from matplotlib import pyplot as plt
-import google.protobuf.json_format as proto
-import sys
-import os
-import time
 import cmd
 import socket
+import sys
 import threading
-from . import config as conf
+import time
+
+import google.protobuf.json_format as proto
+from matplotlib import patches
+from meshtastic import tcp_interface, BROADCAST_NUM, mesh_pb2, admin_pb2, telemetry_pb2, portnums_pb2, channel_pb2
+from pubsub import pub
+
 from .common import *
+
 HW_ID_OFFSET = 16
 TCP_PORT_OFFSET = 4403
 TCP_PORT_CLIENT = 4402

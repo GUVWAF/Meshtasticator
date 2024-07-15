@@ -1,7 +1,9 @@
-import random
-from . import config as conf
 import math
+import random
+
 from scipy.optimize import fsolve
+
+from . import config as conf
 
 VERBOSE = False
 random.seed(conf.SEED)
