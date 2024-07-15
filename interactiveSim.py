@@ -1,7 +1,7 @@
 """ Simulator for letting multiple instances of native programs 
     communicate via TCP as if they did via their LoRa chip. 
     Usage: python3 interactiveSim.py [nrNodes] [--p <full-path-to-program>] [--d] [--s]
-    Use '--d' for Docker. Use '--s' to specify what should be send using this script.
+    Use '--d' for Docker. Use '--s' to specify what should be sent using this script.
 """
 import time
 from lib.common import *
