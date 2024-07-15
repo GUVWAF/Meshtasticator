@@ -41,7 +41,7 @@ def getParams(args):
 		if conf.NR_NODES < 2:
 			print("Need at least two nodes.")
 			exit(1)
-		
+
 	print("Number of nodes:", conf.NR_NODES)
 	print("Modem:", conf.MODEM)
 	print("Simulation time (s):", conf.SIMTIME/1000)
@@ -164,7 +164,7 @@ def genScenario():
 				height_textbox.set_val(conf.HM)
 				slider.set_val(conf.hopLimit)
 				gain_textbox.set_val(conf.GL)
-			
+
 			# New node placement
 			nodeX.append(float(event.xdata))
 			nodeY.append(float(event.ydata))
@@ -182,7 +182,7 @@ def genScenario():
 			os.mkdir("out")
 		with open(os.path.join("out", "nodeConfig.yaml"), 'w') as file:
 			yaml.dump(nodeDict, file) 
-	
+
 	return nodeDict
 
 
@@ -254,12 +254,12 @@ def plotSchedule(packets, messages):
 			plt.text(m.genTime, m.origTxNodeId+0.51, str(m.seq), horizontalalignment='center', verticalalignment='center', fontsize=12)
 		maxTime = max([m.endTime for m in t])
 		minTime = min([m.genTime for m in t])
-		
+
 		plt.xlabel('Time (ms)')
 		plt.ylabel('Node ID')
 		plt.yticks([0]+list(range(conf.NR_NODES)), label=[str(n) for n in [0]+list(range(conf.NR_NODES))])
 		plt.xlim(minTime-0.03*(maxTime-minTime), maxTime)
-		plt.show()	
+		plt.show()
 
 	# combine all messages with overlapping packets in one time sequence 
 	overlapping = [[m] for m in messages]
@@ -291,7 +291,7 @@ def plotSchedule(packets, messages):
 			plt.cla()
 			scheduleIdx += 1
 			if scheduleIdx < len(timeSequences):
-				drawSchedule(scheduleIdx)	
+				drawSchedule(scheduleIdx)
 			else:
 				plt.close('all')
 
@@ -317,7 +317,7 @@ class Graph():
 		self.ax.set_ylabel('y (m)')
 		move_figure(self.fig, 200, 200)
 
-		
+
 	def addNode(self, node):
 		# place the node
 		if not conf.RANDOM:
@@ -334,6 +334,6 @@ class Graph():
 			if not os.path.isdir("out"):
 				os.mkdir("out")
 			os.mkdir(os.path.join("out", "graphics"))
-			
+
 		plt.savefig(os.path.join("out", "graphics", "placement_"+str(conf.NR_NODES)))
 

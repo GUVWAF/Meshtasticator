@@ -6,7 +6,7 @@ import simpy
 from . import config as conf
 
 
-def simReport(data, subdir, param):	
+def simReport(data, subdir, param):
 	fname = "simReport_{}_{}.csv".format(conf.MODEM, param)
 	if not os.path.isdir(os.path.join("out", "report", subdir)):
 		if not os.path.isdir("out"):
@@ -15,8 +15,8 @@ def simReport(data, subdir, param):
 			os.mkdir(os.path.join("out", "report"))
 		os.mkdir(os.path.join("out", "report", subdir))
 	df_new = pd.DataFrame(data)
-	df_new.to_csv(os.path.join("out", "report", subdir, fname), index=False)		
-		
+	df_new.to_csv(os.path.join("out", "report", subdir, fname), index=False)
+
 
 class BroadcastPipe(object):
 	def __init__(self, env, capacity=simpy.core.Infinity):
