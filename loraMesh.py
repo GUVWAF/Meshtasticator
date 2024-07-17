@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-import simpy
 import sys
-import lib.config as conf
+
 from lib.common import *
-from lib.mac import *
-from lib.packet import * 
 from lib.discrete_event import *
+from lib.mac import *
+from lib.packet import *
 
 VERBOSE = True
 random.seed(conf.SEED)
@@ -55,7 +54,7 @@ class MeshNode():
 
 	def generateMessage(self):
 		global messageSeq
-		while True:	
+		while True:
 			nextGen = random.expovariate(1.0/float(self.period))
 			# do not generate message near the end of the simulation (otherwise flooding cannot finish in time)
 			if self.env.now+nextGen+self.hopLimit*airtime(conf.SFMODEM[conf.MODEM], conf.CRMODEM[conf.MODEM], conf.PACKETLENGTH, conf.BWMODEM[conf.MODEM]) < conf.SIMTIME:
@@ -91,7 +90,7 @@ class MeshNode():
 							pNew = MeshPacket(self.nodes, self.nodeid, p.destId, self.nodeid, p.packetLen, p.seq, p.genTime, p.wantAck, False, None)  
 							pNew.retransmissions = minRetransmissions-1
 							verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'wants to retransmit its generated packet to', destId, 'with seq.nr.', p.seq, 'minRetransmissions', minRetransmissions)
-							self.packets.append(pNew)							
+							self.packets.append(pNew)
 							self.env.process(self.transmit(pNew))
 						else:
 							verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'reliable send of', p.seq, 'failed.')
@@ -114,7 +113,7 @@ class MeshNode():
 				verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'is busy Tx-ing', self.isTransmitting, 'or Rx-ing', any(self.isReceiving), 'else channel busy!')
 				txTime = setTransmitDelay(self, packet) 
 				yield self.env.timeout(txTime)
-			verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'ends waiting')	
+			verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'ends waiting')
 
 			# check if you received an ACK for this message in the meantime
 			if packet.seq not in self.leastReceivedHopLimit:
@@ -164,14 +163,14 @@ class MeshNode():
 				p.receivedAtN[self.nodeid] = True
 				verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'received packet', p.seq, 'with delay', round(env.now-p.genTime, 2))
 				delays.append(env.now-p.genTime)
-				
+
 				# update hopLimit for this message
 				if p.seq not in self.leastReceivedHopLimit:  # did not yet receive packet with this seq nr.
 					# verboseprint('Node', self.nodeid, 'received packet nr.', p.seq, 'orig. Tx', p.origTxNodeId, "for the first time.")
 					self.usefulPackets += 1
 					self.leastReceivedHopLimit[p.seq] = p.hopLimit
 				if p.hopLimit < self.leastReceivedHopLimit[p.seq]:  # hop limit of received packet is lower than previously received one
-					self.leastReceivedHopLimit[p.seq] = p.hopLimit	
+					self.leastReceivedHopLimit[p.seq] = p.hopLimit
 
 				# check if implicit ACK for own generated message
 				if p.origTxNodeId == self.nodeid:
@@ -181,8 +180,8 @@ class MeshNode():
 						verboseprint('Node', self.nodeid, 'received implicit ACK on message sent.')
 					p.ackReceived = True
 					continue
-				
-				ackReceived = False	
+
+				ackReceived = False
 				realAckReceived = False
 				for sentPacket in self.packets:
 					# check if ACK for message you currently have in queue
@@ -204,7 +203,7 @@ class MeshNode():
 					pAck = MeshPacket(self.nodes, self.nodeid, p.origTxNodeId, self.nodeid, conf.ACKLENGTH, messageSeq, env.now, False, True, p.seq) 
 					self.packets.append(pAck)
 					self.env.process(self.transmit(pAck))
-        # FloodingRouter: rebroadcasting received message 
+				# FloodingRouter: rebroadcasting received message
 				elif not p.destId == self.nodeid and not ackReceived and not realAckReceived and p.hopLimit > 0:
 					verboseprint('At time', round(self.env.now, 3), 'node', self.nodeid, 'rebroadcasts received packet', p.seq)
 					pNew = MeshPacket(self.nodes, p.origTxNodeId, p.destId, self.nodeid, p.packetLen, p.seq, p.genTime, p.wantAck, False, None) 
@@ -220,7 +219,7 @@ else:
 	def verboseprint(*args, **kwargs): 
 		pass
 
-nodeConfig = getParams(sys.argv)	
+nodeConfig = getParams(sys.argv)
 env = simpy.Environment()
 bc_pipe = BroadcastPipe(env)
 

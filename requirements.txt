@@ -1,8 +1,8 @@
-matplotlib==3.5.1
 meshtastic
-numpy==1.23.0
-pandas==1.4.1
+numpy==1.26.4
+scipy==1.14.0
+matplotlib==3.8.4
+pandas==1.5.3
 pubsub==0.1.2
 Pypubsub==4.0.3
-scipy==1.10.0
-simpy==4.0.1
+simpy==4.1.1

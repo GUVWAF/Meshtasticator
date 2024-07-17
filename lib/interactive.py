@@ -1,19 +1,21 @@
-from meshtastic import tcp_interface, BROADCAST_NUM, mesh_pb2, \
-	admin_pb2, telemetry_pb2, remote_hardware_pb2, portnums_pb2, channel_pb2
-from pubsub import pub
-from matplotlib import patches
-from matplotlib.widgets import TextBox
-from matplotlib import pyplot as plt
-import google.protobuf.json_format as proto
-import sys
-import os
-import time
+import argparse
 import cmd
 import socket
+import sys
 import threading
-import argparse
+import time
+
+import google.protobuf.json_format as proto
+from matplotlib import patches
+from meshtastic import tcp_interface, BROADCAST_NUM, mesh_pb2, admin_pb2, telemetry_pb2, portnums_pb2, channel_pb2
+from pubsub import pub
+
 from . import config as conf
 from .common import *
+
+# TODO: Fix mixed indentation!
+#       Some parts of the file use tabs, some parts user 2 spaces, and some parts use 4 spaces.
+
 HW_ID_OFFSET = 16
 TCP_PORT_OFFSET = 4403
 TCP_PORT_CLIENT = 4402

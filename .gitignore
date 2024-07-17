@@ -32,6 +32,8 @@ obj/**
 tmp/**
 .python-version
 .vs/
+.idea/
+*.pem
 test-results*.xml
 xunit-test-results.xml
 build/ci/performance/performance-results.json

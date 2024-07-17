@@ -1,10 +1,9 @@
-""" Simulator for letting multiple instances of native programs 
+#!/usr/bin/env python3
+""" Simulator for letting multiple instances of native programs
     communicate via TCP as if they did via their LoRa chip. 
     Usage: python3 interactiveSim.py [nrNodes] [--p <full-path-to-program>] [--d] [--s]
-    Use '--d' for Docker. Use '--s' to specify what should be send using this script.
+    Use '--d' for Docker. Use '--s' to specify what should be sent using this script.
 """
-import time
-from lib.common import *
 from lib.interactive import *
 
 sim = interactiveSim() # Start the simulator
@@ -14,8 +13,8 @@ if sim.script:  # Use '--s' as argument if you want to specify what you want to 
         time.sleep(45)  # Wait until nodeInfo messages are sent
         sim.showNodes()  # Show nodeDB as seen by each node
 
-        fromNode = 0  # Node from which a message will be send
-        toNode = 1  # Node to whom a message will be send (if not a broadcast)
+        fromNode = 0  # Node from which a message will be sent
+        toNode = 1  # Node to whom a message will be sent (if not a broadcast)
 
         """ Broadcast Message from node 0. """
         sim.sendBroadcast("Hi all", fromNode)

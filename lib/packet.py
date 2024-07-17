@@ -1,11 +1,10 @@
-import numpy as np
 from lib.common import calcDist
-from . import config as conf
 from .phy import *
-import random
+
 
 NODENUM_BROADCAST = 0xFFFFFFFF
 random.seed(conf.SEED)
+
 
 class MeshPacket(): 
 	def __init__(self, nodes, origTxNodeId, destId, txNodeId, plen, seq, genTime, wantAck, isAck, requestId):

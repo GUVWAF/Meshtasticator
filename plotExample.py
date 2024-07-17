@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-import pandas as pd
-import numpy as np
-from matplotlib import pyplot as plt
 import matplotlib
+import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
+
 try:
-	matplotlib.use("TkAgg")
+    matplotlib.use("TkAgg")
 except ImportError: 
-	print('Tkinter is needed. Install python3-tk with your package manager.')
+    print('Tkinter is needed. Install python3-tk with your package manager.')
 
 hopLimits = [1, 2, 3, 4, 5, 6, 7]
 nrNodes =  [3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25]

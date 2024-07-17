@@ -1,7 +1,9 @@
-import random
-from . import config as conf
 import math
+import random
+
 from scipy.optimize import fsolve
+
+from . import config as conf
 
 VERBOSE = False
 random.seed(conf.SEED)
@@ -88,8 +90,8 @@ def isChannelActive(node, env):
 
 def airtime(sf, cr, pl, bw):
     pl = pl + conf.HEADERLENGTH  # add Meshtastic header length
-    H = 0		# implicit header disabled (H=0) or not (H=1)
-    DE = 0	   # low data rate optimization enabled (=1) or not (=0)
+    H = 0  # implicit header disabled (H=0) or not (H=1)
+    DE = 0  # low data rate optimization enabled (=1) or not (=0)
 
     if bw == 125e3 and sf in [11, 12]: # low data rate optimization 
         DE = 1
@@ -104,7 +106,7 @@ def airtime(sf, cr, pl, bw):
     return (Tpream + Tpayload)*1000
 
 
-def estimatePathLoss(dist, freq, txZ=conf.HM, rxZ=conf.HM):	
+def estimatePathLoss(dist, freq, txZ=conf.HM, rxZ=conf.HM):
     # Log-Distance model
     if conf.MODEL == 0: 
         Lpl = conf.LPLD0 + 10*conf.GAMMA*math.log10(dist/conf.D0)
@@ -143,7 +145,7 @@ def estimatePathLoss(dist, freq, txZ=conf.HM, rxZ=conf.HM):
         
         B = 44.9-6.55*math.log10(rxZ)
 
-        Lpl = A + B*(math.log10(dist)-math.log10(1000)) + C		
+        Lpl = A + B*(math.log10(dist)-math.log10(1000)) + C
         
     # 3GPP model
     elif conf.MODEL >= 5 and conf.MODEL < 7:
@@ -169,6 +171,6 @@ MAXRANGE = fsolve(zeroLinkBudget, 1500)
 if VERBOSE:
 	def verboseprint(*args, **kwargs): 
 		print(*args, **kwargs)
-else:   
+else:
 	def verboseprint(*args, **kwargs): 
 		pass
